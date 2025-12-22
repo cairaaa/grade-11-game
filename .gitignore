@@ -1,0 +1,7 @@
+bin/
+dist/
+examples/
+node_modules/
+
+*.class
+data.txt
