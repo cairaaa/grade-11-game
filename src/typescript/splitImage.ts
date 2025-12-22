@@ -6,7 +6,10 @@ function getDirname(importMetaUrl: string): string {
   return path.dirname(new URL(importMetaUrl).pathname);
 };
 
-async function splitImage(imagePath: string, tileSize: number = 16): Promise<void> {
+export async function splitImage(
+  imagePath: string, 
+  tileSize: number = 16
+): Promise<void> {
   const currentDir = getDirname(import.meta.url);
   const image = sharp(imagePath);
   
@@ -67,6 +70,3 @@ async function isTileTransparent(tileBuffer: Buffer): Promise<boolean> {
   }
   return true;
 }
-
-const imagePath = "";
-splitImage(imagePath);
