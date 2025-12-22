@@ -2,7 +2,7 @@ import sharp from "sharp";
 import path from "path";
 import fs from "fs";
 
-const getDirname = (importMetaUrl: string) => {
+function getDirname(importMetaUrl: string): string {
   return path.dirname(new URL(importMetaUrl).pathname);
 };
 
@@ -68,5 +68,5 @@ async function isTileTransparent(tileBuffer: Buffer): Promise<boolean> {
   return true;
 }
 
-const imagePath = "cave.png";
+const imagePath = "";
 splitImage(imagePath);
