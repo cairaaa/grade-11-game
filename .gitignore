@@ -1,10 +1,11 @@
 bin/
+data/
 dist/
 examples/
 node_modules/
+src/typescript/*.png
 
 *.class
-data.txt
 package-lock.json
 Test.*
 test.*
