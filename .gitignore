@@ -5,3 +5,4 @@ node_modules/
 
 *.class
 data.txt
+package-lock.json
