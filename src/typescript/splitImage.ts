@@ -60,6 +60,26 @@ export async function splitImage(
   console.log(`total: ${tileIndex}`);
 }
 
+export async function getTile(
+  imagePath: string,
+  x: number,
+  y: number,
+  tileSize: number = 16
+): Promise<void> {
+  const currentDir = getDirname(import.meta.url);
+  const baseName = path.basename(imagePath, path.extname(imagePath));
+  const xCoord = x * 16;
+  const yCoord = y * 16;
+  console.log(xCoord, yCoord);
+  const tileBuffer = await sharp(imagePath)
+    .extract({ left: xCoord, top: yCoord, width: tileSize, height: tileSize })
+    .toBuffer();
+  const name = `tile-${baseName}.png`;
+  const outputPath = path.join(currentDir, name);
+  await sharp(tileBuffer).toFile(outputPath);
+  console.log(`saved: ${name}`);
+}
+
 async function isTileTransparent(tileBuffer: Buffer): Promise<boolean> {
   const image = sharp(tileBuffer);
   const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
