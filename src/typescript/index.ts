@@ -1,6 +1,6 @@
-import sharp from 'sharp';
-import path from 'path';
-import fs from 'fs';
+import sharp from "sharp";
+import path from "path";
+import fs from "fs";
 
 const getDirname = (importMetaUrl: string) => {
   return path.dirname(new URL(importMetaUrl).pathname);
