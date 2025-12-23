@@ -3,12 +3,16 @@ import java.io.*;
 import java.awt.*;
 import javax.swing.*;
 
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
+
 public class Game {
     // constants
     final int TILE_LENGTH = 64;
 
     // global variables
     static int[][] map;
+    static BufferedImage[] tileImages;
 
     public Game() {
 
@@ -17,11 +21,11 @@ public class Game {
     public static int[][] getDefaultMap() {
         // change this later
         int[][] defaultMap = {
-            {3, 3, 3, 3, 3},
-            {3, 3, 1, 1, 3},
-            {3, 2, 2, 1, 3},
-            {3, 1, 1, 0, 3},
-            {3, 3, 3, 3, 3}
+            {2, 2, 2, 2, 2},
+            {2, 2, 0, 0, 2},
+            {2, 1, 1, 0, 2},
+            {2, 0, 0, -1, 2},
+            {2, 2, 2, 2, 2}
         };
         return defaultMap;
     }
@@ -55,6 +59,24 @@ public class Game {
         return map;
     }
 
+    public void drawMap() {
+        // change the method later so it only draws the visible parts
+
+    }
+
+    public static BufferedImage[] loadImages(File folder) throws IOException {
+        File[] files = folder.listFiles();
+        int number = files.length;
+        BufferedImage[] images = new BufferedImage[number];
+        for (int i = 0; i < number; i++) {
+            String name = files[i].getName();
+            BufferedImage image = ImageIO.read(files[i]);
+            int index = Integer.parseInt(name.substring(0, 2));
+            images[index] = image;
+        }
+        return images;
+    }
+
     public static boolean createFile(File file) throws IOException {
         if (!file.exists()) {
             if (!file.createNewFile()) {
@@ -65,7 +87,7 @@ public class Game {
     }
 
     public static boolean initialize() throws IOException {
-        File folder = new File("src/data");
+        File folder = new File("src/data/");
         File generalFile = new File("src/data/general.txt");
         File inventoryFile = new File("src/data/inv.txt");
         File mapFile = new File("src/data/map.txt");
@@ -105,6 +127,8 @@ public class Game {
     }
 
     public static void main(String[] args) throws IOException {
+        // move this to initalize
+        tileImages = loadImages(new File("src/assets/tiles/"));
         System.out.println("hello world!");
         // do smth if it fails or smth or put this in constructor?? idk
         System.out.println(initialize());
