@@ -6,7 +6,7 @@
       "type": "shell",
       "command": "./graphics.sh Game.java",
       "options": {
-          "cwd": "${workspaceFolder}/src"
+          "cwd": "${workspaceFolder}"
       },
       "presentation": {
           "echo": true,

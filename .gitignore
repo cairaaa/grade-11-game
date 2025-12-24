@@ -3,7 +3,7 @@ data/
 dist/
 examples/
 node_modules/
-src/typescript/*.png
+typescript/*.png
 
 *.class
 package-lock.json

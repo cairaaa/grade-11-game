@@ -32,7 +32,7 @@ public class Game extends JPanel {
     }
 
     public static int[][] loadMap() throws FileNotFoundException {
-        File mapFile = new File("src/data/map.txt");
+        File mapFile = new File("data/map.txt");
         Scanner inFile = new Scanner(mapFile);
 
         String firstLine = inFile.nextLine();
@@ -103,10 +103,10 @@ public class Game extends JPanel {
     }
 
     public static boolean initialize() throws IOException {
-        File folder = new File("src/data/");
-        File generalFile = new File("src/data/general.txt");
-        File inventoryFile = new File("src/data/inv.txt");
-        File mapFile = new File("src/data/map.txt");
+        File folder = new File("data/");
+        File generalFile = new File("data/general.txt");
+        File inventoryFile = new File("data/inv.txt");
+        File mapFile = new File("data/map.txt");
 
         if (!folder.exists()) {
             if (!folder.mkdir()) {
@@ -118,7 +118,7 @@ public class Game extends JPanel {
         boolean isMapCreated = createFile(mapFile);
 
         if (mapFile.length() == 0) {
-            PrintWriter out = new PrintWriter(new FileWriter("src/data/map.txt"));
+            PrintWriter out = new PrintWriter(new FileWriter("data/map.txt"));
             int[][] defaultMap = getDefaultMap();
             map = defaultMap;
             for (int i = 0; i < map.length; i++) {
@@ -139,7 +139,7 @@ public class Game extends JPanel {
             }
         }
 
-        tileImages = loadImages(new File("src/assets/tiles/"));
+        tileImages = loadImages(new File("assets/tiles/"));
 
         return isGeneralCreated && isInvCreated && isMapCreated;
     }
