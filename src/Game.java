@@ -6,7 +6,7 @@ import javax.swing.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 
-public class Game {
+public class Game extends JPanel {
     // constants
     final int TILE_LENGTH = 64;
 
@@ -15,7 +15,8 @@ public class Game {
     static BufferedImage[] tileImages;
 
     public Game() {
-
+        setBackground(Color.BLACK);
+        setPreferredSize(new Dimension(map[0].length * TILE_LENGTH, map.length * TILE_LENGTH));
     }
 
     public static int[][] getDefaultMap() {
@@ -59,13 +60,28 @@ public class Game {
         return map;
     }
 
-    public void drawMap() {
+    public void drawMap(Graphics g) {
         // change the method later so it only draws the visible parts
-
+        for (int row = 0; row < map.length; row++) {
+            for (int col = 0; col < map[row].length; col++) {
+                int x = col * TILE_LENGTH;
+                int y = row * TILE_LENGTH;
+                int tileType = map[row][col];
+                if (tileType >= 0) {
+                    g.drawImage(
+                        tileImages[tileType], x, y, 
+                        TILE_LENGTH, TILE_LENGTH, null
+                    );
+                }
+            }
+        }
     }
 
     public static BufferedImage[] loadImages(File folder) throws IOException {
         File[] files = folder.listFiles();
+        System.out.println(folder.getAbsolutePath());
+        System.out.println(folder.exists());
+        System.out.println(folder.isDirectory());
         int number = files.length;
         BufferedImage[] images = new BufferedImage[number];
         for (int i = 0; i < number; i++) {
@@ -123,14 +139,28 @@ public class Game {
             }
         }
 
+        tileImages = loadImages(new File("src/assets/tiles/"));
+
         return isGeneralCreated && isInvCreated && isMapCreated;
     }
 
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        drawMap(g);
+    }
+
     public static void main(String[] args) throws IOException {
-        // move this to initalize
-        tileImages = loadImages(new File("src/assets/tiles/"));
         System.out.println("hello world!");
         // do smth if it fails or smth or put this in constructor?? idk
-        System.out.println(initialize());
+        System.out.println("initialize: " + initialize());
+
+        JFrame frame = new JFrame ("Game");
+        Game panel = new Game();
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        frame.add(panel);
+        frame.pack();
+        frame.setVisible(true);
     }
 }
