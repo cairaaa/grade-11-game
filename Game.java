@@ -16,11 +16,20 @@ public class Game extends JPanel implements MouseListener {
     // change to actual num later
     static BufferedImage[][] tileImages = new BufferedImage[100][];
 
+    // constructor
     public Game() {
         setBackground(Color.BLACK);
         setPreferredSize(new Dimension(map[0].length * TILE_LENGTH, map.length * TILE_LENGTH));
     }
 
+    // helper functions
+    public static int[] getTileParts(int num) {
+        // change this if the number stuff changes which it probably will
+        int[] array = {num / 16, num % 16};
+        return array;
+    }
+
+    // initializing the game
     public static int[][] getDefaultMap() {
         // change this later
         int[][] defaultMap = {
@@ -69,16 +78,87 @@ public class Game extends JPanel implements MouseListener {
                 int x = col * TILE_LENGTH;
                 int y = row * TILE_LENGTH;
                 int tile = map[row][col];
-                int tileVariant = tile / 16;
-                int tileNum = tile % 16;
+                int[] tileNumbers = getTileParts(tile);
                 if (tile >= 0) {
                     g.drawImage(
-                        tileImages[tileVariant][tileNum], x, y, 
+                        tileImages[tileNumbers[0]][tileNumbers[1]], x, y, 
                         TILE_LENGTH, TILE_LENGTH, null
                     );
                 }
             }
         }
+    }
+
+    public void updateTile(int col, int row) {
+        int num = map[row][col];
+        
+        if (num < -1 || num >= 16) {
+            return;
+        }
+        
+        if (num == -1) {
+            int mask = 0;
+            if (row > 0 && map[row-1][col] >= 0 && map[row-1][col] < 16) {
+                mask += 1;  
+            }
+            if (
+                col < map[0].length - 1 && 
+                map[row][col+1] >= 0 && 
+                map[row][col+1] < 16
+            ) {
+                mask += 2;
+            }
+            if (row < map.length - 1 && map[row+1][col] >= 0 && map[row+1][col] < 16) {
+                mask += 4;
+            }
+            if (col > 0 && map[row][col-1] >= 0 && map[row][col-1] < 16) {
+                mask += 8;
+            }
+            map[row][col] = mask;
+        } else {
+            map[row][col] = -1;
+        }
+        
+        System.out.println(
+            "update tile at (" + col + ", " + row + "): " + num + " to " + map[row][col]
+        );
+        if (row > 0) {
+            updateTileMask(col, row-1);
+        }
+        if (col < map[0].length - 1) {
+            updateTileMask(col+1, row);
+        }
+        if (row < map.length - 1) {
+            updateTileMask(col, row+1);
+        }
+        if (col > 0) {
+            updateTileMask(col-1, row);
+        }
+    }
+
+    public void updateTileMask(int col, int row) {
+        int num = map[row][col];
+        
+        if (num < 0 || num >= 16) {
+            return;
+        }
+        
+        int mask = 0;
+        if (row > 0 && map[row-1][col] >= 0 && map[row-1][col] < 16) {
+            mask += 1;
+        }
+        if (col < map[0].length - 1 && map[row][col+1] >= 0 && map[row][col+1] < 16) {
+            mask += 2;
+        }
+        if (row < map.length - 1 && map[row+1][col] >= 0 && map[row+1][col] < 16) {
+            mask += 4;
+        }
+        if (col > 0 && map[row][col-1] >= 0 && map[row][col-1] < 16) {
+            mask += 8;
+        }
+        
+        map[row][col] = mask;
+        System.out.println("update edge to: " + map[row][col]);
     }
 
     public static BufferedImage[] loadImages(File folder) throws IOException {
@@ -143,7 +223,7 @@ public class Game extends JPanel implements MouseListener {
             }
         }
 
-        tileImages[0] = loadImages(new File("assets/farmland/"));
+        tileImages[0] = loadImages(new File("assets/tiles/farmland"));
 
         return isGeneralCreated && isInvCreated && isMapCreated;
     }
@@ -159,12 +239,15 @@ public class Game extends JPanel implements MouseListener {
         int x = e.getX();
         int y = e.getY();
         int tileX = x / TILE_LENGTH;
-        int tileY = x / TILE_LENGTH;
+        int tileY = y / TILE_LENGTH;
 
         System.out.println("pressed at " + x + ", " + y);
         System.out.println("pressed tile: " + tileX + ", " + tileY);
+        updateTile(tileX, tileY);
+        repaint();
     }
 
+    // mouse related methods
     @Override
     public void mouseReleased(MouseEvent e) {
 
@@ -194,9 +277,8 @@ public class Game extends JPanel implements MouseListener {
         Game panel = new Game();
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.add(panel);
-        frame.addMouseListener(panel);
+        panel.addMouseListener(panel);
         frame.pack();
         frame.setVisible(true);
     }
