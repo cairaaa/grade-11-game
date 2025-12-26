@@ -1,18 +1,20 @@
-import java.util.*;
-import java.io.*;
 import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.*;
 import javax.swing.*;
 
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 
-public class Game extends JPanel {
+public class Game extends JPanel implements MouseListener {
     // constants
     final int TILE_LENGTH = 64;
 
     // global variables
     static int[][] map;
-    static BufferedImage[] tileImages;
+    // change to actual num later
+    static BufferedImage[][] tileImages = new BufferedImage[100][];
 
     public Game() {
         setBackground(Color.BLACK);
@@ -22,11 +24,11 @@ public class Game extends JPanel {
     public static int[][] getDefaultMap() {
         // change this later
         int[][] defaultMap = {
-            {2, 2, 2, 2, 2},
-            {2, 2, 0, 0, 2},
-            {2, 1, 1, 0, 2},
-            {2, 0, 0, -1, 2},
-            {2, 2, 2, 2, 2}
+            {0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0}
         };
         return defaultMap;
     }
@@ -66,10 +68,12 @@ public class Game extends JPanel {
             for (int col = 0; col < map[row].length; col++) {
                 int x = col * TILE_LENGTH;
                 int y = row * TILE_LENGTH;
-                int tileType = map[row][col];
-                if (tileType >= 0) {
+                int tile = map[row][col];
+                int tileVariant = tile / 16;
+                int tileNum = tile % 16;
+                if (tile >= 0) {
                     g.drawImage(
-                        tileImages[tileType], x, y, 
+                        tileImages[tileVariant][tileNum], x, y, 
                         TILE_LENGTH, TILE_LENGTH, null
                     );
                 }
@@ -139,14 +143,46 @@ public class Game extends JPanel {
             }
         }
 
-        tileImages = loadImages(new File("assets/tiles/"));
+        tileImages[0] = loadImages(new File("assets/farmland/"));
 
         return isGeneralCreated && isInvCreated && isMapCreated;
     }
 
+    @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         drawMap(g);
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+        int x = e.getX();
+        int y = e.getY();
+        int tileX = x / TILE_LENGTH;
+        int tileY = x / TILE_LENGTH;
+
+        System.out.println("pressed at " + x + ", " + y);
+        System.out.println("pressed tile: " + tileX + ", " + tileY);
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+
     }
 
     public static void main(String[] args) throws IOException {
@@ -160,6 +196,7 @@ public class Game extends JPanel {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.add(panel);
+        frame.addMouseListener(panel);
         frame.pack();
         frame.setVisible(true);
     }
