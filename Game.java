@@ -14,7 +14,7 @@ public class Game extends JPanel implements MouseListener {
     // global variables
     static int[][] map;
     // change to actual num later
-    static BufferedImage[][] tileImages = new BufferedImage[100][];
+    static BufferedImage[][] tileImages = new BufferedImage[100][16];
 
     // constructor
     public Game() {
@@ -29,15 +29,93 @@ public class Game extends JPanel implements MouseListener {
         return array;
     }
 
+    // drawing stuff
+    public boolean isFarmland(int value) {
+        return value >= 0 && value < 16;
+    }
+
+    public boolean updateTile(int col, int row) {
+        int num = map[row][col];
+        
+        if (!isFarmland(num) && num != 32) {
+            return false;
+        }
+        
+        if (num == 32) {
+            int mask = 0;
+            if (row > 0 && isFarmland(map[row - 1][col])) {
+                mask += 1;  
+            }
+            if (col < map[0].length - 1 && isFarmland(map[row][col + 1])) {
+                mask += 2;
+            }
+            if (row < map.length - 1 && isFarmland(map[row + 1][col])) {
+                mask += 4;
+            }
+            if (col > 0 && isFarmland(map[row][col - 1])) {
+                mask += 8;
+            }
+            map[row][col] = mask;
+        } else {
+            map[row][col] = 32;
+        }
+        
+        System.out.println(
+            "update tile at (" + col + ", " + row + "): " + num + " to " + map[row][col]
+        );
+        if (row > 0) {
+            updateTileMask(col, row - 1);
+        }
+        if (col < map[0].length - 1) {
+            updateTileMask(col + 1, row);
+        }
+        if (row < map.length - 1) {
+            updateTileMask(col, row + 1);
+        }
+        if (col > 0) {
+            updateTileMask(col - 1, row);
+        }
+        return true;
+    }
+
+    public void updateTileMask(int col, int row) {
+        int num = map[row][col];
+        
+        if (!isFarmland(num)) {
+            return;
+        }
+        
+        int mask = 0;
+        if (row > 0 && isFarmland(map[row - 1][col])) {
+            mask += 1;
+        }
+        if (col < map[0].length - 1 && isFarmland(map[row][col + 1])) {
+            mask += 2;
+        }
+        if (row < map.length - 1 && isFarmland(map[row + 1][col])) {
+            mask += 4;
+        }
+        if (col > 0 && isFarmland(map[row][col - 1])) {
+            mask += 8;
+        }
+        
+        map[row][col] = mask;
+        System.out.println("update edge to: " + map[row][col]);
+    }
+
     // initializing the game
     public static int[][] getDefaultMap() {
         // change this later
         int[][] defaultMap = {
-            {0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0}
+            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16},
+            {16, 17, 18, 18, 18, 18, 18, 18, 19, 16},
+            {16, 20, 32, 32, 32, 32, 32, 32, 21, 16},
+            {16, 20, 32, 32, 32, 32, 32, 32, 21, 16},
+            {16, 20, 32, 32, 32, 32, 32, 32, 21, 16},
+            {16, 20, 32, 32, 32, 32, 32, 32, 21, 16},
+            {16, 20, 32, 32, 32, 32, 32, 32, 21, 16},
+            {16, 22, 23, 23, 23, 23, 23, 23, 24, 16},
+            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16}
         };
         return defaultMap;
     }
@@ -89,78 +167,6 @@ public class Game extends JPanel implements MouseListener {
         }
     }
 
-    public void updateTile(int col, int row) {
-        int num = map[row][col];
-        
-        if (num < -1 || num >= 16) {
-            return;
-        }
-        
-        if (num == -1) {
-            int mask = 0;
-            if (row > 0 && map[row-1][col] >= 0 && map[row-1][col] < 16) {
-                mask += 1;  
-            }
-            if (
-                col < map[0].length - 1 && 
-                map[row][col+1] >= 0 && 
-                map[row][col+1] < 16
-            ) {
-                mask += 2;
-            }
-            if (row < map.length - 1 && map[row+1][col] >= 0 && map[row+1][col] < 16) {
-                mask += 4;
-            }
-            if (col > 0 && map[row][col-1] >= 0 && map[row][col-1] < 16) {
-                mask += 8;
-            }
-            map[row][col] = mask;
-        } else {
-            map[row][col] = -1;
-        }
-        
-        System.out.println(
-            "update tile at (" + col + ", " + row + "): " + num + " to " + map[row][col]
-        );
-        if (row > 0) {
-            updateTileMask(col, row-1);
-        }
-        if (col < map[0].length - 1) {
-            updateTileMask(col+1, row);
-        }
-        if (row < map.length - 1) {
-            updateTileMask(col, row+1);
-        }
-        if (col > 0) {
-            updateTileMask(col-1, row);
-        }
-    }
-
-    public void updateTileMask(int col, int row) {
-        int num = map[row][col];
-        
-        if (num < 0 || num >= 16) {
-            return;
-        }
-        
-        int mask = 0;
-        if (row > 0 && map[row-1][col] >= 0 && map[row-1][col] < 16) {
-            mask += 1;
-        }
-        if (col < map[0].length - 1 && map[row][col+1] >= 0 && map[row][col+1] < 16) {
-            mask += 2;
-        }
-        if (row < map.length - 1 && map[row+1][col] >= 0 && map[row+1][col] < 16) {
-            mask += 4;
-        }
-        if (col > 0 && map[row][col-1] >= 0 && map[row][col-1] < 16) {
-            mask += 8;
-        }
-        
-        map[row][col] = mask;
-        System.out.println("update edge to: " + map[row][col]);
-    }
-
     public static BufferedImage[] loadImages(File folder) throws IOException {
         File[] files = folder.listFiles();
         System.out.println(folder.getAbsolutePath());
@@ -171,7 +177,7 @@ public class Game extends JPanel implements MouseListener {
         for (int i = 0; i < number; i++) {
             String name = files[i].getName();
             BufferedImage image = ImageIO.read(files[i]);
-            int index = Integer.parseInt(name.substring(0, 2));
+            int index = Integer.parseInt(name.substring(0, 2)) % 16;
             images[index] = image;
         }
         return images;
@@ -224,6 +230,9 @@ public class Game extends JPanel implements MouseListener {
         }
 
         tileImages[0] = loadImages(new File("assets/tiles/farmland"));
+        tileImages[1] = loadImages(new File("assets/tiles/grass"));
+        tileImages[2] = loadImages(new File("assets/tiles/misc"));
+        tileImages[3] = loadImages(new File("assets/tiles/water"));
 
         return isGeneralCreated && isInvCreated && isMapCreated;
     }
@@ -231,6 +240,7 @@ public class Game extends JPanel implements MouseListener {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        System.out.println("running paint component :)");
         drawMap(g);
     }
 
@@ -243,8 +253,10 @@ public class Game extends JPanel implements MouseListener {
 
         System.out.println("pressed at " + x + ", " + y);
         System.out.println("pressed tile: " + tileX + ", " + tileY);
-        updateTile(tileX, tileY);
-        repaint();
+        boolean result = updateTile(tileX, tileY);
+        if (result) {
+            repaint();
+        }
     }
 
     // mouse related methods
