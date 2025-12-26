@@ -20,7 +20,7 @@ export async function splitImage(
   
   const baseName = path.basename(imagePath, path.extname(imagePath));
   
-  const outputFolder = path.join(currentDir, `../assets/${baseName}`);
+  const outputFolder = path.join(currentDir, `assets/${baseName}`);
   if (!fs.existsSync(outputFolder)) {
     fs.mkdirSync(outputFolder, { recursive: true });
   }
