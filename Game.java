@@ -7,19 +7,33 @@ import javax.swing.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 
-public class Game extends JPanel implements MouseListener {
+public class Game extends JPanel implements MouseListener, KeyListener, Runnable {
     // constants
     final int TILE_LENGTH = 64;
+    final int FPS = 60;
 
     // global variables
+    Thread thread;
+
+    // map/image related
     static int[][] map;
     // change to actual num later
     static BufferedImage[][] tileImages = new BufferedImage[100][16];
 
+    // movement
+    boolean up, down, left, right;
+    int speed = 4;
+    int cameraX = 0;
+    int cameraY = 0;
+
     // constructor
     public Game() {
         setBackground(Color.BLACK);
-        setPreferredSize(new Dimension(map[0].length * TILE_LENGTH, map.length * TILE_LENGTH));
+        setPreferredSize(
+            new Dimension(map[0].length * TILE_LENGTH, map.length * TILE_LENGTH)
+        );
+        thread = new Thread(this);
+		thread.start();
     }
 
     // helper functions
@@ -103,6 +117,21 @@ public class Game extends JPanel implements MouseListener {
         System.out.println("update edge to: " + map[row][col]);
     }
 
+    // movement related
+    public void move() {
+		if (left) {
+            cameraX -= speed;
+        } else if (right) {
+            cameraX += speed;
+        }
+        
+        if (up) {
+            cameraY -= speed;
+        } else if (down) {
+            cameraY += speed;
+        }
+	}
+
     // initializing the game
     public static int[][] getDefaultMap() {
         // change this later
@@ -153,8 +182,13 @@ public class Game extends JPanel implements MouseListener {
         // change the method later so it only draws the visible parts
         for (int row = 0; row < map.length; row++) {
             for (int col = 0; col < map[row].length; col++) {
-                int x = col * TILE_LENGTH;
-                int y = row * TILE_LENGTH;
+                int x = col * TILE_LENGTH - cameraX;
+                int y = row * TILE_LENGTH - cameraY;
+
+                if (x + TILE_LENGTH < 0 || x > getWidth() || 
+                    y + TILE_LENGTH < 0 || y > getHeight()) {
+                    continue;
+                }
                 int tile = map[row][col];
                 int[] tileNumbers = getTileParts(tile);
                 if (tile >= 0) {
@@ -240,14 +274,14 @@ public class Game extends JPanel implements MouseListener {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        System.out.println("running paint component :)");
         drawMap(g);
     }
 
+    // mouse related methods
     @Override
     public void mousePressed(MouseEvent e) {
-        int x = e.getX();
-        int y = e.getY();
+        int x = e.getX() + cameraX;
+        int y = e.getY() + cameraY;
         int tileX = x / TILE_LENGTH;
         int tileY = y / TILE_LENGTH;
 
@@ -259,7 +293,6 @@ public class Game extends JPanel implements MouseListener {
         }
     }
 
-    // mouse related methods
     @Override
     public void mouseReleased(MouseEvent e) {
 
@@ -280,6 +313,58 @@ public class Game extends JPanel implements MouseListener {
 
     }
 
+    // key related methods
+    @Override
+    public void keyPressed(KeyEvent e) {
+        int key = e.getKeyCode();
+        if (key == KeyEvent.VK_A) {
+			left = true;
+			right = false;
+		} else if (key == KeyEvent.VK_D) {
+			right = true;
+			left = false;
+		} else if (key == KeyEvent.VK_W) {
+			up = true;
+			down = false;
+		} else if (key == KeyEvent.VK_S) {
+			down = true;
+			up = false;
+		}
+    }
+
+    @Override 
+    public void keyReleased(KeyEvent e) {
+        int key = e.getKeyCode();
+		if (key == KeyEvent.VK_A) {
+			left = false;
+		} else if (key == KeyEvent.VK_D) {
+			right = false;
+		} else if (key == KeyEvent.VK_W) {
+			up = false;
+		} else if (key == KeyEvent.VK_S) {
+			down = false;
+		}
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+
+    }
+
+    @Override
+	public void run() {
+		while(true) {
+			// main game loop
+            move();
+			this.repaint();
+			try {
+				Thread.sleep(1000/FPS);
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
     public static void main(String[] args) throws IOException {
         System.out.println("hello world!");
         // do smth if it fails or smth or put this in constructor?? idk
@@ -291,6 +376,8 @@ public class Game extends JPanel implements MouseListener {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.add(panel);
         panel.addMouseListener(panel);
+        panel.addKeyListener(panel);
+        panel.setFocusable(true);
         frame.pack();
         frame.setVisible(true);
     }
