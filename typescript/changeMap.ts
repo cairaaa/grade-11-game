@@ -34,3 +34,13 @@ export function addColumn(map: number[][], index: number, value: number): void {
     map[i].splice(index, 0, value);
   }
 }
+
+export function deleteRow(map: number[][], index: number): void {
+  map.splice(index, 1);
+}
+
+export function deleteColumn(map: number[][], index: number): void {
+  for (let i = 0; i < map.length; i++) {
+      map[i].splice(index, 1);
+  }
+}
