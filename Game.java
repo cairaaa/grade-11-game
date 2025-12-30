@@ -14,6 +14,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 
     // global variables
     Thread thread;
+    JPanel panel;
 
     // map/image related
     static int[][] map;
@@ -26,14 +27,26 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     int cameraX = 0;
     int cameraY = 0;
 
+    // remove later
+    JLabel cameraLocation;
+
     // constructor
     public Game() {
         setBackground(Color.BLACK);
         setPreferredSize(
-            new Dimension(map[0].length * TILE_LENGTH, map.length * TILE_LENGTH)
+            new Dimension(12 * TILE_LENGTH, 9 * TILE_LENGTH)
         );
         thread = new Thread(this);
 		thread.start();
+
+        // remove this later
+        cameraLocation = new JLabel("camera: " + cameraX + " " + cameraY);
+        setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        add(cameraLocation);
+
+        addMouseListener(this);
+        addKeyListener(this);
+        setFocusable(true);
     }
 
     // helper functions
@@ -119,14 +132,19 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 
     // movement related
     public void move() {
+        // change this later so its only in bounds for all directions
 		if (left) {
-            cameraX -= speed;
+            if (cameraX > 0) {
+                cameraX -= speed;
+            }
         } else if (right) {
             cameraX += speed;
         }
         
         if (up) {
-            cameraY -= speed;
+            if (cameraY > 0) {
+                cameraY -= speed;
+            }
         } else if (down) {
             cameraY += speed;
         }
@@ -136,15 +154,15 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     public static int[][] getDefaultMap() {
         // change this later
         int[][] defaultMap = {
-            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16},
-            {16, 17, 18, 18, 18, 18, 18, 18, 19, 16},
-            {16, 20, 32, 32, 32, 32, 32, 32, 21, 16},
-            {16, 20, 32, 32, 32, 32, 32, 32, 21, 16},
-            {16, 20, 32, 32, 32, 32, 32, 32, 21, 16},
-            {16, 20, 32, 32, 32, 32, 32, 32, 21, 16},
-            {16, 20, 32, 32, 32, 32, 32, 32, 21, 16},
-            {16, 22, 23, 23, 23, 23, 23, 23, 24, 16},
-            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16}
+            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16},
+            {16, 17, 18, 18, 18, 18, 18, 18, 18, 18, 19, 16},
+            {16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16},
+            {16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16},
+            {16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16},
+            {16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16},
+            {16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16},
+            {16, 22, 23, 23, 23, 23, 23, 23, 23, 23, 24, 16},
+            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16}
         };
         return defaultMap;
     }
@@ -179,16 +197,19 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     }
 
     public void drawMap(Graphics g) {
-        // change the method later so it only draws the visible parts
-        for (int row = 0; row < map.length; row++) {
-            for (int col = 0; col < map[row].length; col++) {
+        int startCol = Math.max(0, cameraX / TILE_LENGTH);
+        int endCol = Math.min(
+            map[0].length - 1, (cameraX + 12 * TILE_LENGTH) / TILE_LENGTH
+        );
+        int startRow = Math.max(0, cameraY / TILE_LENGTH);
+        int endRow = Math.min(
+            map.length - 1, (cameraY + 9 * TILE_LENGTH) / TILE_LENGTH
+        );
+
+        for (int row = startRow; row <= endRow; row++) {
+            for (int col = startCol; col <= endCol; col++) {
                 int x = col * TILE_LENGTH - cameraX;
                 int y = row * TILE_LENGTH - cameraY;
-
-                if (x + TILE_LENGTH < 0 || x > getWidth() || 
-                    y + TILE_LENGTH < 0 || y > getHeight()) {
-                    continue;
-                }
                 int tile = map[row][col];
                 int[] tileNumbers = getTileParts(tile);
                 if (tile >= 0) {
@@ -275,6 +296,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         drawMap(g);
+        cameraLocation.setText("camera: " + cameraX + " " + cameraY);
     }
 
     // mouse related methods
@@ -356,6 +378,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 		while(true) {
 			// main game loop
             move();
+            // cameraLocation = new JLabel(cameraX + cameraY);
 			this.repaint();
 			try {
 				Thread.sleep(1000/FPS);
@@ -369,16 +392,13 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         System.out.println("hello world!");
         // do smth if it fails or smth or put this in constructor?? idk
         System.out.println("initialize: " + initialize());
-
-        JFrame frame = new JFrame ("Game");
+        JFrame frame = new JFrame("Game");
         Game panel = new Game();
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.add(panel);
-        panel.addMouseListener(panel);
-        panel.addKeyListener(panel);
-        panel.setFocusable(true);
         frame.pack();
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 }
