@@ -3,6 +3,7 @@ data/
 dist/
 examples/
 node_modules/
+typescript/assets
 typescript/*.png
 
 *.class
