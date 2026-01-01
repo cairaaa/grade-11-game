@@ -11,6 +11,8 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     // constants
     final int TILE_LENGTH = 64;
     final int FPS = 60;
+    final int SCREEN_WIDTH = 12 * TILE_LENGTH;
+    final int SCREEN_HEIGHT = 9 * TILE_LENGTH;
 
     // global variables
     Thread thread;
@@ -20,21 +22,31 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     static int[][] map;
     // change to actual num later
     static BufferedImage[][] tileImages = new BufferedImage[100][16];
+    static BufferedImage[] playerImages;
 
     // movement
     boolean up, down, left, right;
     int speed = 4;
-    int cameraX = 0;
-    int cameraY = 0;
+    // change these later
+    int cameraX = 200;
+    int cameraY = 200;
+    int playerTileX, playerTileY;
+    String lastDirection = "down";
+
+    // animation
+    int animationFrame = 0;
+    int animationCounter = 0;
+    int animationSpeed = 10;
 
     // remove later
     JLabel cameraLocation;
+    JLabel playerLocation;
 
     // constructor
     public Game() {
         setBackground(Color.BLACK);
         setPreferredSize(
-            new Dimension(12 * TILE_LENGTH, 9 * TILE_LENGTH)
+            new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT)
         );
         thread = new Thread(this);
 		thread.start();
@@ -43,6 +55,9 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         cameraLocation = new JLabel("camera: " + cameraX + " " + cameraY);
         setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
         add(cameraLocation);
+        
+        playerLocation = new JLabel("player: " + playerTileX + " " + playerTileY);
+        add(playerLocation);
 
         addMouseListener(this);
         addKeyListener(this);
@@ -130,6 +145,38 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         System.out.println("update edge to: " + map[row][col]);
     }
 
+    public void drawPlayer(Graphics g) {
+        int startIndex = 0;
+        int frameToDraw;
+
+        if (down) {
+            startIndex = 4;
+        } else if (up) {
+            startIndex = 16;
+        } else if (right) {
+            startIndex = 10;
+        } else if (left) {
+            startIndex = 22;
+        } else {
+            if (lastDirection.equals("down")) {
+                frameToDraw = 0;
+            } else if (lastDirection.equals("right")) {
+                frameToDraw = 1;
+            } else if (lastDirection.equals("up")) {
+                frameToDraw = 2;
+            } else if (lastDirection.equals("left")) {
+                frameToDraw = 3;
+            } else {
+                System.out.println("eee");
+                frameToDraw = 0;
+            }
+            g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, null);
+            return;
+        }
+        frameToDraw = startIndex + (animationFrame % 6);
+        g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, null);
+    }
+
     // movement related
     public void move() {
         // change this later so its only in bounds for all directions
@@ -148,12 +195,40 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         } else if (down) {
             cameraY += speed;
         }
+        playerTileX = (cameraX + SCREEN_WIDTH / 2) / TILE_LENGTH;
+        playerTileY = (cameraY + SCREEN_HEIGHT / 2) / TILE_LENGTH;
+
+        // maybe add this with the other if statements later
+        if (up) {
+            lastDirection = "up";
+        } else if (down) {
+            lastDirection = "down";
+        } else if (left) {
+            lastDirection = "left";
+        } else if (right) {
+            lastDirection = "right";
+        }
 	}
+
+    // animation
+    public void animatePlayer() {
+        if (up || down || left || right) {
+            animationCounter++;
+            if (animationCounter >= animationSpeed) {
+                animationFrame++;
+                animationCounter = 0;
+            }
+        } else {
+            animationFrame = 0;
+        }
+    }
 
     // initializing the game
     public static int[][] getDefaultMap() {
         // change this later
         int[][] defaultMap = {
+            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16},
+            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16},
             {16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16},
             {16, 17, 18, 18, 18, 18, 18, 18, 18, 18, 19, 16},
             {16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16},
@@ -162,7 +237,9 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
             {16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16},
             {16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16},
             {16, 22, 23, 23, 23, 23, 23, 23, 23, 23, 24, 16},
-            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16}
+            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16},
+            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16},
+            {16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16},
         };
         return defaultMap;
     }
@@ -222,7 +299,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         }
     }
 
-    public static BufferedImage[] loadImages(File folder) throws IOException {
+    public static BufferedImage[] loadImages(File folder, boolean mod) throws IOException {
         File[] files = folder.listFiles();
         System.out.println(folder.getAbsolutePath());
         System.out.println(folder.exists());
@@ -232,7 +309,12 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         for (int i = 0; i < number; i++) {
             String name = files[i].getName();
             BufferedImage image = ImageIO.read(files[i]);
-            int index = Integer.parseInt(name.substring(0, 2)) % 16;
+            int index;
+            if (mod) {
+                index = Integer.parseInt(name.substring(0, 2)) % 16;
+            } else {
+                index = Integer.parseInt(name.substring(0, 2));
+            }
             images[index] = image;
         }
         return images;
@@ -284,10 +366,12 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
             }
         }
 
-        tileImages[0] = loadImages(new File("assets/tiles/farmland"));
-        tileImages[1] = loadImages(new File("assets/tiles/grass"));
-        tileImages[2] = loadImages(new File("assets/tiles/misc"));
-        tileImages[3] = loadImages(new File("assets/tiles/water"));
+        tileImages[0] = loadImages(new File("assets/tiles/farmland"), true);
+        tileImages[1] = loadImages(new File("assets/tiles/grass"), true);
+        tileImages[2] = loadImages(new File("assets/tiles/misc"), true);
+        tileImages[3] = loadImages(new File("assets/tiles/water"), true);
+
+        playerImages = loadImages(new File("assets/player"), false);
 
         return isGeneralCreated && isInvCreated && isMapCreated;
     }
@@ -296,7 +380,9 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         drawMap(g);
+        drawPlayer(g);
         cameraLocation.setText("camera: " + cameraX + " " + cameraY);
+        playerLocation.setText("player: " + playerTileX + " " + playerTileY);
     }
 
     // mouse related methods
@@ -378,7 +464,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 		while(true) {
 			// main game loop
             move();
-            // cameraLocation = new JLabel(cameraX + cameraY);
+            animatePlayer();
 			this.repaint();
 			try {
 				Thread.sleep(1000/FPS);
