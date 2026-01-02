@@ -7,6 +7,7 @@ typescript/assets
 typescript/*.png
 
 *.class
+map.json
 package-lock.json
-Test.*
-test.*
+Test*
+test*
