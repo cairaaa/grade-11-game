@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "convert": "npx tsx convertTiledMap.ts",
     "test": "npx tsx test.ts"
   },
   "keywords": [],
