@@ -17,6 +17,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     // global variables
     Thread thread;
     JPanel panel;
+    JPanel uiPanel;
 
     // map/image related
     static int[][] map;
@@ -47,23 +48,31 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     // constructor
     public Game() {
         setBackground(Color.BLACK);
+        // setLayout(new BorderLayout());
         setPreferredSize(
             new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT)
         );
         thread = new Thread(this);
 		thread.start();
 
+        addMouseListener(this);
+        addKeyListener(this);
+        setFocusable(true);
+
+        // a panel for the ui
+        uiPanel = new JPanel();
+        uiPanel.setLayout(new BorderLayout());
+        JLabel hotbar = new JLabel(new ImageIcon("assets/ui/hotbar.png"));
+        // uiPanel.add(hotbar, BorderLayout.SOUTH);
+        // add(uiPanel, BorderLayout.SOUTH);
+
         // remove this later
         cameraLocation = new JLabel("camera: " + cameraX + " " + cameraY);
-        setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        // setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
         add(cameraLocation);
         
         playerLocation = new JLabel("player: " + playerTileX + " " + playerTileY);
         add(playerLocation);
-
-        addMouseListener(this);
-        addKeyListener(this);
-        setFocusable(true);
     }
 
     // helper functions
