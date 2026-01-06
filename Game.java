@@ -26,6 +26,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     static BufferedImage[][] tileImages = new BufferedImage[4][16];
     static BufferedImage[][] objectImages = new BufferedImage[10][16];
     static BufferedImage[] playerImages;
+    static BufferedImage[] uiImages;
 
     // movement
     boolean up, down, left, right;
@@ -40,6 +41,12 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     int animationFrame = 0;
     int animationCounter = 0;
     int animationSpeed = 8;
+
+    // game state
+    int framesPassed = 0;
+    int secondsPassed = 0;
+
+    boolean isInvOpen = false;
 
     // remove later
     JLabel cameraLocation;
@@ -80,6 +87,18 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         // change this if the number stuff changes which it probably will
         int[] array = {num / 16, num % 16};
         return array;
+    }
+
+    public static int[] getImageDim(Image image) {
+        int[] imageDimensions = {image.getWidth(null), image.getHeight(null)};
+        return imageDimensions;
+    }
+
+    public static int[] getImageDim(Image image, int scalar) {
+        int[] imageDimensions = {
+            image.getWidth(null) * scalar, image.getHeight(null) * scalar
+        };
+        return imageDimensions;
     }
 
     // drawing stuff
@@ -186,6 +205,28 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         }
         frameToDraw = startIndex + (animationFrame % 6);
         g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, null);
+    }
+
+    public void drawUi(Graphics g) {
+        Image hotbarImage = uiImages[0];
+        int[] hotbarDimensions = getImageDim(hotbarImage, 3);
+        // int hotbarWidth =
+        Image boardImage = uiImages[1];
+        g.drawImage(
+            hotbarImage, SCREEN_WIDTH / 2 - hotbarDimensions[0] / 2, 
+            SCREEN_HEIGHT - hotbarDimensions[1], hotbarDimensions[0], 
+            hotbarDimensions[1], null
+        );
+    }
+
+    public void drawInventory(Graphics g) {
+        Image inventoryImage = uiImages[2];
+        int[] imageDimensions = getImageDim(inventoryImage, 3);
+        int x = SCREEN_WIDTH / 2 - imageDimensions[0] / 2;
+        int y = SCREEN_HEIGHT / 2 - imageDimensions[1] / 2;
+        g.drawImage(
+            inventoryImage, x, y, imageDimensions[0], imageDimensions[1] , null
+        );
     }
 
     // movement related
@@ -371,7 +412,6 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         int[][] changedMap;
 
         String firstLine = inFile.nextLine();
-        // change split later
         String[] firstRow = firstLine.split(" ");
         int cols = firstRow.length;
 
@@ -526,6 +566,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         objectImages[2] = loadImages(new File("assets/objects/trees"), true);
 
         playerImages = loadImages(new File("assets/player"), false);
+        uiImages = loadImages(new File("assets/ui"), false);
 
         return isGeneralCreated && isInvCreated && isMapCreated && isObjectCreated;
     }
@@ -535,6 +576,10 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         super.paintComponent(g);
         drawMap(g);
         drawPlayer(g);
+        drawUi(g);
+        if (isInvOpen) {
+            drawInventory(g);
+        }
         cameraLocation.setText("camera: " + cameraX + " " + cameraY);
         playerLocation.setText("player: " + playerTileX + " " + playerTileY);
     }
@@ -591,7 +636,9 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 		} else if (key == KeyEvent.VK_S) {
 			down = true;
 			up = false;
-		}
+		} else if (key == KeyEvent.VK_E) {
+            isInvOpen = !isInvOpen;
+        }
     }
 
     @Override 
@@ -619,6 +666,11 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 			// main game loop
             move();
             animatePlayer();
+            framesPassed += 1;
+            if (framesPassed == 60) {
+                framesPassed = 0;
+                secondsPassed += 1;
+            }
 			this.repaint();
 			try {
 				Thread.sleep(1000/FPS);
