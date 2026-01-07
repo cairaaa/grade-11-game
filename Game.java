@@ -17,7 +17,6 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     // global variables
     Thread thread;
     JPanel panel;
-    JPanel uiPanel;
 
     // map/image related
     static int[][] map;
@@ -35,7 +34,6 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     // movement
     boolean up, down, left, right;
     int speed = 6;
-    // change these later
     int cameraX = 500;
     int cameraY = 850;
     int playerTileX, playerTileY;
@@ -63,7 +61,6 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     // constructor
     public Game() {
         setBackground(Color.BLACK);
-        // setLayout(new BorderLayout());
         setPreferredSize(
             new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT)
         );
@@ -73,10 +70,6 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         addMouseListener(this);
         addKeyListener(this);
         setFocusable(true);
-
-        // a panel for the ui
-        uiPanel = new JPanel();
-        uiPanel.setLayout(new BorderLayout());
 
         // remove this later
         cameraLocation = new JLabel("camera: " + cameraX + " " + cameraY);
@@ -89,7 +82,6 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 
     // helper functions
     public int[] getTileParts(int num) {
-        // change this if the number stuff changes which it probably will
         int[] array = {num / 16, num % 16};
         return array;
     }
@@ -185,14 +177,14 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         int startIndex = 0;
         int frameToDraw;
 
-        if (down) {
-            startIndex = 4;
-        } else if (up) {
-            startIndex = 16;
-        } else if (right) {
+        if (right) {
             startIndex = 10;
         } else if (left) {
             startIndex = 22;
+        } else if (up) {
+            startIndex = 16;
+        } else if (down) {
+            startIndex = 4;
         } else {
             if (lastDirection.equals("down")) {
                 frameToDraw = 0;
@@ -241,19 +233,39 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
                 );
             }
         }
-        // move this laters
         g.drawImage(uiImages[3], x[hotbarSlot] - 8, startY - 8, 55, 55, this);
     }
 
     public void drawInventory(Graphics g) {
-        // add all the items here as well
         Image inventoryImage = uiImages[2];
         int[] imageDimensions = getImageDim(inventoryImage, 3);
         int x = SCREEN_WIDTH / 2 - imageDimensions[0] / 2;
         int y = SCREEN_HEIGHT / 2 - imageDimensions[1] / 2;
         g.drawImage(
-            inventoryImage, x, y, imageDimensions[0], imageDimensions[1] , this
+            inventoryImage, x, y, imageDimensions[0], imageDimensions[1], this
         );
+        int[] drawX = new int[9];
+        int[] drawY = new int[3];
+        int scalar = 3;
+        int startX = SCREEN_WIDTH / 2 - imageDimensions[0] / 2 + 12 * scalar;
+        int startY = SCREEN_HEIGHT / 2 - imageDimensions[1] / 2 + 10 * scalar;
+        drawY[0] = startY;
+        drawY[1] = startY + 20 * scalar;
+        drawY[2] = startY + 44 * scalar;
+        for (int i = 0; i < 9; i++) {
+            drawX[i] = startX + i * 20 * scalar;
+        }
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 9; j++) {
+                if (inventory[i][j] >= 0) {
+                    int[] itemNumbers = getTileParts(inventory[i][j]);
+                    g.drawImage(
+                        itemImages[itemNumbers[0]][itemNumbers[1]], 
+                        drawX[j], drawY[i], 16 * scalar, 16 * scalar, this
+                    );
+                }
+            }
+        }
     }
 
     // movement related
@@ -654,14 +666,34 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     // mouse related methods
     @Override
     public void mousePressed(MouseEvent e) {
-        int x = e.getX() + cameraX;
-        int y = e.getY() + cameraY;
+        int actualX = e.getX();
+        int actualY = e.getY();
+        int x = actualX + cameraX;
+        int y = actualY + cameraY;
         int tileX = x / TILE_LENGTH;
         int tileY = y / TILE_LENGTH;
+        if (isInvOpen) {
+            // do stuff
+            return;
+        }
+        // hotbar is drawn at 157 & 521 at top left corner
+        if (
+            actualX > 159 && actualX < 159 + 455 && 
+            actualY > 523 && actualY < SCREEN_HEIGHT
+        ) {
+            // change this to actual hotbar slot later
+            hotbarSlot = 0;
+            System.out.println(
+                "hotbar clicked at " + actualX + " " + actualY + " slot: " + hotbarSlot
+            );
+            return;
+        }
 
-        System.out.println("pressed at " + x + ", " + y);
-        System.out.println("pressed tile: " + tileX + ", " + tileY);
-        updateTile(tileX, tileY);
+        if (hotbar[hotbarSlot] == 32) {
+            System.out.println("pressed at " + x + ", " + y);
+            System.out.println("pressed tile: " + tileX + ", " + tileY);
+            updateTile(tileX, tileY);
+        }
     }
 
     @Override
@@ -688,23 +720,27 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
-        if (key == KeyEvent.VK_A) {
-			left = true;
-			right = false;
-		} else if (key == KeyEvent.VK_D) {
-			right = true;
-			left = false;
-		} else if (key == KeyEvent.VK_W) {
-			up = true;
-			down = false;
-		} else if (key == KeyEvent.VK_S) {
-			down = true;
-			up = false;
-		} else if (key == KeyEvent.VK_E) {
-            isInvOpen = !isInvOpen;
-        } else if (key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9){
-            hotbarSlot = Integer.parseInt(KeyEvent.getKeyText(key)) - 1;
+        // continue to add other states where this shouldnt apply to and stuff
+        if (!isInvOpen) {
+            if (key == KeyEvent.VK_A) {
+                left = true;
+                right = false;
+            } else if (key == KeyEvent.VK_D) {
+                right = true;
+                left = false;
+            } else if (key == KeyEvent.VK_W) {
+                up = true;
+                down = false;
+            } else if (key == KeyEvent.VK_S) {
+                down = true;
+                up = false;
+            } else if (key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9){
+                hotbarSlot = Integer.parseInt(KeyEvent.getKeyText(key)) - 1;
+            }
         }
+        if (key == KeyEvent.VK_E) {
+            isInvOpen = !isInvOpen;
+        } 
     }
 
     @Override 
@@ -733,7 +769,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
             move();
             animatePlayer();
             framesPassed += 1;
-            if (framesPassed == 60) {
+            if (framesPassed == FPS) {
                 framesPassed = 0;
                 secondsPassed += 1;
             }
