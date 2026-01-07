@@ -50,7 +50,10 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     int framesPassed = 0;
     int secondsPassed = 0;
 
+    // inventory related
     boolean isInvOpen = false;
+    static int[] hotbar = new int[9];
+    static int[][] inventory = new int[3][9];
 
     // remove later
     JLabel cameraLocation;
@@ -73,9 +76,6 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         // a panel for the ui
         uiPanel = new JPanel();
         uiPanel.setLayout(new BorderLayout());
-        JLabel hotbar = new JLabel(new ImageIcon("assets/ui/hotbar.png"));
-        // uiPanel.add(hotbar, BorderLayout.SOUTH);
-        // add(uiPanel, BorderLayout.SOUTH);
 
         // remove this later
         cameraLocation = new JLabel("camera: " + cameraX + " " + cameraY);
@@ -94,14 +94,14 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     }
 
     public int[] getImageDim(Image image) {
-        int[] imageDimensions = {image.getWidth(null), image.getHeight(null)};
+        int[] imageDimensions = {image.getWidth(this), image.getHeight(this)};
         return imageDimensions;
     }
 
     public int[] getImageDim(Image image, double scalar) {
         int[] imageDimensions = {
-            (int) Math.floor(image.getWidth(null) * scalar), 
-            (int) Math.floor(image.getHeight(null) * scalar)
+            (int) Math.floor(image.getWidth(this) * scalar), 
+            (int) Math.floor(image.getHeight(this) * scalar)
         };
         return imageDimensions;
     }
@@ -205,11 +205,11 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
                 System.out.println("eee");
                 frameToDraw = 0;
             }
-            g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, null);
+            g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
             return;
         }
         frameToDraw = startIndex + (animationFrame % 6);
-        g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, null);
+        g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
     }
 
     public void drawUi(Graphics g) {
@@ -221,11 +221,11 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         g.drawImage(
             hotbarImage, SCREEN_WIDTH / 2 - hotbarDimensions[0] / 2, 
             SCREEN_HEIGHT - hotbarDimensions[1], hotbarDimensions[0], 
-            hotbarDimensions[1], null
+            hotbarDimensions[1], this
         );
         g.drawImage(
             boardImage, SCREEN_WIDTH - boardDimensions[0], 0, 
-            boardDimensions[0], boardDimensions[1], null
+            boardDimensions[0], boardDimensions[1], this
         );
     }
 
@@ -236,7 +236,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         int x = SCREEN_WIDTH / 2 - imageDimensions[0] / 2;
         int y = SCREEN_HEIGHT / 2 - imageDimensions[1] / 2;
         g.drawImage(
-            inventoryImage, x, y, imageDimensions[0], imageDimensions[1] , null
+            inventoryImage, x, y, imageDimensions[0], imageDimensions[1] , this
         );
     }
 
@@ -418,6 +418,32 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         return map;
     }
 
+    public static void loadInventory() throws IOException {
+        Scanner inFile = new Scanner(new File("data/inv.txt"));
+        inventory[2] = hotbar;
+        if (!inFile.hasNextLine()) {
+            hotbar[0] = 32;
+            hotbar[1] = 33;
+            PrintWriter out = new PrintWriter(new FileWriter("data/inv.txt"));
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 9; j++) {
+                    out.print(inventory[i][j] + " ");
+                }
+                out.println();
+            }
+            inFile.close();
+            out.close();
+            return;
+        }
+        for (int i = 0; i < 3; i++) {
+            String[] values = inFile.nextLine().split(" ");
+            for (int j = 0; j < values.length; j++) {
+                inventory[i][j] = Integer.parseInt(values[j]);
+            }
+        }
+        inFile.close();
+    }
+
     public static int[][] loadMap(File mapFile) throws FileNotFoundException {
         Scanner inFile = new Scanner(mapFile);
         int[][] changedMap;
@@ -446,6 +472,24 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         return changedMap;
     }
 
+    public static BufferedImage[] loadImages(File folder, boolean mod) throws IOException {
+        File[] files = folder.listFiles();
+        int number = files.length;
+        BufferedImage[] images = new BufferedImage[number];
+        for (int i = 0; i < number; i++) {
+            String name = files[i].getName();
+            BufferedImage image = ImageIO.read(files[i]);
+            int index;
+            if (mod) {
+                index = Integer.parseInt(name.substring(0, 2)) % 16;
+            } else {
+                index = Integer.parseInt(name.substring(0, 2));
+            }
+            images[index] = image;
+        }
+        return images;
+    }
+
     public void drawMap(Graphics g) {
         if (offScreenBuffer == null) {
             offScreenImage = createImage(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -470,7 +514,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
                 if (tile >= 0) {
                     offScreenBuffer.drawImage(
                         tileImages[tileNumbers[0]][tileNumbers[1]], x, y, 
-                        TILE_LENGTH, TILE_LENGTH, null
+                        TILE_LENGTH, TILE_LENGTH, this
                     );
                 }
             }
@@ -485,37 +529,16 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
                 if (objectTile >= 0 && map[row][col] == 16) {
                     int[] objectNumbers = getTileParts(objectTile);
                     Image image = objectImages[objectNumbers[0]][objectNumbers[1]];
-                    int scaledWidth = image.getWidth(null) * 4;
-                    int scaledHeight = image.getHeight(null) * 4;
+                    int scaledWidth = image.getWidth(this) * 4;
+                    int scaledHeight = image.getHeight(this) * 4;
                     offScreenBuffer.drawImage(
-                        image, x, y, scaledWidth, scaledHeight, null
+                        image, x, y, scaledWidth, scaledHeight, this
                     );
                 }
             }
         }
-        g.drawImage(offScreenImage, 0, 0, null);
-    }
-
-    public static BufferedImage[] loadImages(File folder, boolean mod) throws IOException {
-        File[] files = folder.listFiles();
-        System.out.println(folder.getAbsolutePath());
-        System.out.println(folder.exists());
-        System.out.println(folder.isDirectory());
-        int number = files.length;
-        BufferedImage[] images = new BufferedImage[number];
-        for (int i = 0; i < number; i++) {
-            String name = files[i].getName();
-            BufferedImage image = ImageIO.read(files[i]);
-            int index;
-            if (mod) {
-                index = Integer.parseInt(name.substring(0, 2)) % 16;
-            } else {
-                index = Integer.parseInt(name.substring(0, 2));
-            }
-            images[index] = image;
-        }
-        return images;
-    }
+        g.drawImage(offScreenImage, 0, 0, this);
+    }    
 
     public static boolean createFile(File file) throws IOException {
         if (!file.exists()) {
@@ -573,6 +596,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
             int[][] loadedObjectsMap = loadMap(objectFile);
             objectsMap = loadedObjectsMap;
         }
+        loadInventory();
 
         tileImages[0] = loadImages(new File("assets/tiles/farmland"), true);
         tileImages[1] = loadImages(new File("assets/tiles/grass"), true);
@@ -684,7 +708,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 
     @Override
 	public void run() {
-		while(true) {
+		while (true) {
 			// main game loop
             move();
             animatePlayer();
@@ -713,7 +737,6 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         // frame.setResizable(false);
         frame.add(panel);
         frame.pack();
-        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 }
