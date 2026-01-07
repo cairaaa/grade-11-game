@@ -10,7 +10,7 @@ import javax.imageio.ImageIO;
 public class Game extends JPanel implements MouseListener, KeyListener, Runnable {
     // constants
     final int TILE_LENGTH = 64;
-    final int FPS = 60;
+    final int FPS = 45;
     final int SCREEN_WIDTH = 12 * TILE_LENGTH;
     final int SCREEN_HEIGHT = 9 * TILE_LENGTH;
 
@@ -34,7 +34,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 
     // movement
     boolean up, down, left, right;
-    int speed = 4;
+    int speed = 6;
     // change these later
     int cameraX = 500;
     int cameraY = 850;
@@ -44,7 +44,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     // animation
     int animationFrame = 0;
     int animationCounter = 0;
-    int animationSpeed = 8;
+    int animationSpeed = 6;
 
     // game state
     int framesPassed = 0;
@@ -52,6 +52,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 
     // inventory related
     boolean isInvOpen = false;
+    int hotbarSlot = 0;
     static int[] hotbar = new int[9];
     static int[][] inventory = new int[3][9];
 
@@ -227,6 +228,21 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
             boardImage, SCREEN_WIDTH - boardDimensions[0], 0, 
             boardDimensions[0], boardDimensions[1], this
         );
+        double scalar = 2.5;
+        int[] x = new int[9];
+        int startX = (int) Math.ceil(SCREEN_WIDTH / 2 - hotbarDimensions[0] / 2 + 3 * scalar);
+        int startY = (int) Math.floor(SCREEN_HEIGHT - 19 * scalar);
+        for (int i = 0; i < 9; i++) {
+            x[i] = (int) Math.floor(startX + i * 20 * scalar);
+            if (hotbar[i] >= 0) {
+                int[] hotbarNumbers = getTileParts(hotbar[i]);
+                g.drawImage(
+                    itemImages[hotbarNumbers[0]][hotbarNumbers[1]], x[i], startY, 40, 40, this
+                );
+            }
+        }
+        // move this laters
+        g.drawImage(uiImages[3], x[hotbarSlot] - 8, startY - 8, 55, 55, this);
     }
 
     public void drawInventory(Graphics g) {
@@ -427,7 +443,12 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
             PrintWriter out = new PrintWriter(new FileWriter("data/inv.txt"));
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 9; j++) {
-                    out.print(inventory[i][j] + " ");
+                    if (inventory[i][j] != 0) {
+                        out.print(inventory[i][j] + " ");
+                    } else {
+                        inventory[i][j] = -1;
+                        out.print(-1 + " ");
+                    }
                 }
                 out.println();
             }
@@ -640,10 +661,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 
         System.out.println("pressed at " + x + ", " + y);
         System.out.println("pressed tile: " + tileX + ", " + tileY);
-        boolean result = updateTile(tileX, tileY);
-        if (result) {
-            repaint();
-        }
+        updateTile(tileX, tileY);
     }
 
     @Override
@@ -684,6 +702,8 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 			up = false;
 		} else if (key == KeyEvent.VK_E) {
             isInvOpen = !isInvOpen;
+        } else if (key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9){
+            hotbarSlot = Integer.parseInt(KeyEvent.getKeyText(key)) - 1;
         }
     }
 
