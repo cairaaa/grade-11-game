@@ -7,7 +7,11 @@ import javax.swing.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 
-public class Game extends JPanel implements MouseListener, KeyListener, Runnable {
+public class Game extends JPanel implements 
+    MouseListener, 
+    MouseMotionListener,
+    KeyListener, 
+    Runnable {
     // constants
     final int TILE_LENGTH = 64;
     final int FPS = 45;
@@ -21,7 +25,8 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     // map/image related
     static int[][] map;
     static int[][] objectsMap;
-    // change to actual num later
+    static int[][] wetTilesMap;
+    
     static BufferedImage[][] tileImages = new BufferedImage[4][16];
     static BufferedImage[][] objectImages = new BufferedImage[4][16];
     static BufferedImage[][] itemImages = new BufferedImage[3][16];
@@ -59,7 +64,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
     JLabel playerLocation;
 
     // constructor
-    public Game() {
+    public Game() throws IOException, FontFormatException {
         setBackground(Color.BLACK);
         setPreferredSize(
             new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -70,6 +75,10 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
         addMouseListener(this);
         addKeyListener(this);
         setFocusable(true);
+
+        Font font = Font.createFont(
+            Font.TRUETYPE_FONT, new File("assets/font/PixelifySans-Regular.ttf")
+        );
 
         // remove this later
         cameraLocation = new JLabel("camera: " + cameraX + " " + cameraY);
@@ -394,21 +403,21 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, -1, -1, -1, -1, 1606099, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 17012099, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1609908, -1, -1, -1, -1, 160608, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1709908, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1701208, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 18, -1, 1803099, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 18, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1809904, -1, 180304, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -552,21 +561,51 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
                 }
             }
         }
+        int[] drawn = new int[3];
         // this needs to change, as objects lengths yk
         for (int row = startRow; row <= endRow; row++) {
             for (int col = startCol; col <= endCol; col++) {
                 int x = col * TILE_LENGTH - cameraX;
                 int y = row * TILE_LENGTH - cameraY;
                 int objectTile = objectsMap[row][col];
-                // change this if it causes errors
-                if (objectTile >= 0 && map[row][col] == 16) {
-                    int[] objectNumbers = getTileParts(objectTile);
-                    Image image = objectImages[objectNumbers[0]][objectNumbers[1]];
-                    int scaledWidth = image.getWidth(this) * 4;
-                    int scaledHeight = image.getHeight(this) * 4;
-                    offScreenBuffer.drawImage(
-                        image, x, y, scaledWidth, scaledHeight, this
-                    );
+                int[] objectNumbers;
+                Image image;
+                int scaledWidth, scaledHeight;
+                if (objectTile >= 0) {
+                    if (objectTile > 99) {
+                        // do stuff
+                        String stringTile = "" + objectTile;
+                        // remember that this wont work if it has to move 10 tiles etc
+                        String[] array = stringTile.split("0");
+                        objectNumbers = getTileParts(Integer.parseInt(array[0]));
+                        image = objectImages[objectNumbers[0]][objectNumbers[1]];
+                        scaledWidth = image.getWidth(this) * 4;
+                        scaledHeight = image.getHeight(this) * 4;
+                        if (Integer.parseInt(array[1]) == 99) {
+                            y = y - TILE_LENGTH * (Integer.parseInt(array[2]) - 1);
+                        } else if (Integer.parseInt(array[2]) == 99) {
+                            x = x - TILE_LENGTH * (Integer.parseInt(array[1]) - 1);
+                        } else {
+                            x = x - TILE_LENGTH * (Integer.parseInt(array[1]) - 1);
+                            y = y - TILE_LENGTH * (Integer.parseInt(array[2]) - 1);
+                        }
+                        // if (drawn[objectNumbers[0]] - 16 == 0) {
+                            offScreenBuffer.drawImage(
+                                image, x, y, scaledWidth, scaledHeight, this
+                            );
+                            // drawn[objectNumbers[0]] = 1;
+                        // }
+                    } else if (
+                        objectTile >= 0 && (map[row][col] == 16 || map[row][col] == 32)
+                    ) {
+                        objectNumbers = getTileParts(objectTile);
+                        image = objectImages[objectNumbers[0]][objectNumbers[1]];
+                        scaledWidth = image.getWidth(this) * 4;
+                        scaledHeight = image.getHeight(this) * 4;
+                        offScreenBuffer.drawImage(
+                            image, x, y, scaledWidth, scaledHeight, this
+                        );
+                    }
                 }
             }
         }
@@ -629,6 +668,12 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
             int[][] loadedObjectsMap = loadMap(objectFile);
             objectsMap = loadedObjectsMap;
         }
+        wetTilesMap = new int[map.length][map[0].length];
+        for (int i = 0; i < wetTilesMap.length; i++) {
+            for (int j = 0; j < wetTilesMap[0].length; j++) {
+                wetTilesMap[i][j] = -1;
+            }
+        }
         loadInventory();
 
         tileImages[0] = loadImages(new File("assets/tiles/farmland"), true);
@@ -689,10 +734,13 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
             return;
         }
 
+        // run animation even if tile is invalid!!!
         if (hotbar[hotbarSlot] == 32) {
             System.out.println("pressed at " + x + ", " + y);
             System.out.println("pressed tile: " + tileX + ", " + tileY);
             updateTile(tileX, tileY);
+        } else if (hotbar[hotbarSlot] == 33) {
+            // water bucket & make new function for drawing this?
         }
     }
 
@@ -713,6 +761,16 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 
     @Override
     public void mouseExited(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
 
     }
 
@@ -782,7 +840,7 @@ public class Game extends JPanel implements MouseListener, KeyListener, Runnable
 		}
 	}
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, FontFormatException {
         System.out.println("hello world!");
         // do smth if it fails or smth or put this in constructor?? idk
         System.out.println("initialize: " + initialize());
