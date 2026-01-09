@@ -14,7 +14,7 @@ public class Game extends JPanel implements
     Runnable {
     // constants
     final int TILE_LENGTH = 64;
-    final int FPS = 45;
+    final int FPS = 30;
     final int SCREEN_WIDTH = 12 * TILE_LENGTH;
     final int SCREEN_HEIGHT = 9 * TILE_LENGTH;
 
@@ -38,7 +38,7 @@ public class Game extends JPanel implements
 
     // movement
     boolean up, down, left, right;
-    int speed = 6;
+    int speed = 10;
     int cameraX = 500;
     int cameraY = 850;
     int playerTileX, playerTileY;
@@ -47,12 +47,12 @@ public class Game extends JPanel implements
     // animation
     int animationFrame = 0;
     int animationCounter = 0;
-    int animationSpeed = 6;
+    int animationSpeed = 4;
 
     // game state
     int framesPassed = 0;
     int secondsPassed = 0;
-
+    
     // inventory related
     boolean isInvOpen = false;
     int hotbarSlot = 0;
@@ -113,11 +113,11 @@ public class Game extends JPanel implements
         return value >= 0 && value < 16;
     }
 
-    public boolean updateTile(int col, int row) {
+    public void updateTile(int col, int row) {
         int num = map[row][col];
         
         if (!isFarmland(num) && num != 32) {
-            return false;
+            return;
         }
         
         if (num == 32) {
@@ -154,7 +154,6 @@ public class Game extends JPanel implements
         if (col > 0) {
             updateTileMask(col - 1, row);
         }
-        return true;
     }
 
     public void updateTileMask(int col, int row) {
@@ -180,6 +179,14 @@ public class Game extends JPanel implements
         
         map[row][col] = mask;
         System.out.println("update edge to: " + map[row][col]);
+    }
+
+    public void updateWateredTile(int row, int col) {
+        int num = map[row][col];
+        if (!isFarmland(num)) {
+            return;
+        }
+        wetTilesMap[row][col] = 1;
     }
 
     public void drawPlayer(Graphics g) {
@@ -547,6 +554,7 @@ public class Game extends JPanel implements
         int endRow = Math.min(
             map.length - 1, (cameraY + 9 * TILE_LENGTH) / TILE_LENGTH
         );
+        // for drawing tiles
         for (int row = startRow; row <= endRow; row++) {
             for (int col = startCol; col <= endCol; col++) {
                 int x = col * TILE_LENGTH - cameraX;
@@ -561,6 +569,22 @@ public class Game extends JPanel implements
                 }
             }
         }
+        // for drawing watered tiles
+        for (int row = startRow; row <= endRow; row++) {
+            for (int col = startCol; col <= endCol; col++) {
+                int x = col * TILE_LENGTH - cameraX;
+                int y = row * TILE_LENGTH - cameraY;
+                int tile = wetTilesMap[row][col];
+                if (tile == 1 && isFarmland(map[row][col])) {
+                    offScreenBuffer.drawImage(
+                        objectImages[3][map[row][col]], 
+                        x, y, TILE_LENGTH, TILE_LENGTH, this
+                    );
+                }
+            }
+        }
+
+        // for drawing objects
         int[] drawn = new int[3];
         // this needs to change, as objects lengths yk
         for (int row = startRow; row <= endRow; row++) {
@@ -669,11 +693,6 @@ public class Game extends JPanel implements
             objectsMap = loadedObjectsMap;
         }
         wetTilesMap = new int[map.length][map[0].length];
-        for (int i = 0; i < wetTilesMap.length; i++) {
-            for (int j = 0; j < wetTilesMap[0].length; j++) {
-                wetTilesMap[i][j] = -1;
-            }
-        }
         loadInventory();
 
         tileImages[0] = loadImages(new File("assets/tiles/farmland"), true);
@@ -684,6 +703,7 @@ public class Game extends JPanel implements
         objectImages[0] = loadImages(new File("assets/objects/extra"), true);
         objectImages[1] = loadImages(new File("assets/objects/structures"), true);
         objectImages[2] = loadImages(new File("assets/objects/trees"), true);
+        objectImages[3] = loadImages(new File("assets/objects/wet-farmland"), true);
 
         itemImages[0] = loadImages(new File("assets/items/crops"), true);
         itemImages[1] = loadImages(new File("assets/items/seeds"), true);
@@ -738,9 +758,14 @@ public class Game extends JPanel implements
         if (hotbar[hotbarSlot] == 32) {
             System.out.println("pressed at " + x + ", " + y);
             System.out.println("pressed tile: " + tileX + ", " + tileY);
+            System.out.println("hoe tool");
             updateTile(tileX, tileY);
         } else if (hotbar[hotbarSlot] == 33) {
-            // water bucket & make new function for drawing this?
+            // check if this is right after
+            System.out.println("pressed at " + x + ", " + y);
+            System.out.println("pressed tile: " + tileX + ", " + tileY);
+            System.out.println("water bucket");
+            updateWateredTile(tileX, tileY);
         }
     }
 
