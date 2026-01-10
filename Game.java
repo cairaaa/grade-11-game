@@ -59,6 +59,9 @@ public class Game extends JPanel implements
     static int[] hotbar = new int[9];
     static int[][] inventory = new int[3][9];
 
+    // other
+    Font font;
+
     // remove later
     JLabel cameraLocation;
     JLabel playerLocation;
@@ -76,16 +79,21 @@ public class Game extends JPanel implements
         addKeyListener(this);
         setFocusable(true);
 
-        Font font = Font.createFont(
+        font = Font.createFont(
             Font.TRUETYPE_FONT, new File("assets/font/PixelifySans-Regular.ttf")
         );
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        ge.registerFont(font);
+        font = font.deriveFont(Font.PLAIN, 20f);
 
         // remove this later
         cameraLocation = new JLabel("camera: " + cameraX + " " + cameraY);
+        cameraLocation.setFont(font);
         // setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
         add(cameraLocation);
         
         playerLocation = new JLabel("player: " + playerTileX + " " + playerTileY);
+        playerLocation.setFont(font);
         add(playerLocation);
     }
 
@@ -95,9 +103,13 @@ public class Game extends JPanel implements
         return array;
     }
 
+    public int[] getItemInfo(int num) {
+        int[] array = {num / 100, num % 100};
+        return array;
+    }
+
     public int[] getImageDim(Image image) {
-        int[] imageDimensions = {image.getWidth(this), image.getHeight(this)};
-        return imageDimensions;
+        return getImageDim(image, 1);
     }
 
     public int[] getImageDim(Image image, double scalar) {
@@ -106,6 +118,23 @@ public class Game extends JPanel implements
             (int) Math.floor(image.getHeight(this) * scalar)
         };
         return imageDimensions;
+    }
+
+    // remove these helper functions later
+    public void printArray(int[] array) {
+        for (int i = 0; i < array.length; i++) {
+            System.out.print(array[i] + " ");
+        }
+        System.out.println();
+    }
+
+    public void printArray(int[][] array) {
+        for (int i = 0; i < array.length; i++) {
+            for (int j = 0; j < array[i].length; j++) {
+                System.out.print(array[i][j] + " ");
+            }
+        }
+        System.out.println();
     }
 
     // drawing stuff
@@ -181,7 +210,8 @@ public class Game extends JPanel implements
         System.out.println("update edge to: " + map[row][col]);
     }
 
-    public void updateWateredTile(int row, int col) {
+    // change this to also use update tile
+    public void updateWateredTile(int col, int row) {
         int num = map[row][col];
         if (!isFarmland(num)) {
             return;
@@ -189,18 +219,18 @@ public class Game extends JPanel implements
         wetTilesMap[row][col] = 1;
     }
 
-    public void drawPlayer(Graphics g) {
+    public void drawPlayer(Graphics g, int index) {
         int startIndex = 0;
         int frameToDraw;
 
         if (right) {
-            startIndex = 10;
+            startIndex = 6 + index;
         } else if (left) {
-            startIndex = 22;
+            startIndex = 18 + index;
         } else if (up) {
-            startIndex = 16;
+            startIndex = 12 + index;
         } else if (down) {
-            startIndex = 4;
+            startIndex = 0 + index;
         } else {
             if (lastDirection.equals("down")) {
                 frameToDraw = 0;
@@ -221,8 +251,57 @@ public class Game extends JPanel implements
         g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
     }
 
+    public int[] getNumberPos(int x, int y) {
+        return getNumberPos(x, y, 1);
+    }
+
+    public int[] getNumberPos(int x, int y, double scalar) {
+        int position = (int) (16 * scalar);
+        int[] array = {
+            (int) (x + position - 6 * scalar), 
+            y + position, 
+            (int) (x + position - 3 * scalar)
+        };
+        return array;
+    }
+
+    public void drawItems(
+        Graphics g, 
+        int[][] values, 
+        int[] drawX, 
+        int[] drawY, 
+        double scalar
+    ) {
+        for (int i = 0; i < drawY.length; i++) {
+            for (int j = 0; j < drawX.length; j++) {
+                if (values[i][j] >= 0) {
+                    int[] itemNumbers = getItemInfo(values[i][j]);
+                    int[] otherNumbers = getTileParts(itemNumbers[0]);
+                    g.drawImage(
+                        itemImages[otherNumbers[0]][otherNumbers[1]], 
+                        drawX[j], drawY[i], 
+                        (int) (16 * scalar), (int) (16 * scalar), this
+                    );
+                    if (itemNumbers[0] < 32) {
+                        int[] numberPos = getNumberPos(drawX[j], drawY[i], scalar);
+                        if (itemNumbers[1] >= 10) {
+                            g.drawString(
+                                String.valueOf(itemNumbers[1]), 
+                                numberPos[0], numberPos[1]
+                            );
+                        } else {
+                            g.drawString(
+                                String.valueOf(itemNumbers[1]), 
+                                numberPos[2], numberPos[1]
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public void drawUi(Graphics g) {
-        // add other stuff like draw tools and text etc?
         Image hotbarImage = uiImages[0];
         int[] hotbarDimensions = getImageDim(hotbarImage, 2.5);
         Image boardImage = uiImages[1];
@@ -238,17 +317,16 @@ public class Game extends JPanel implements
         );
         double scalar = 2.5;
         int[] x = new int[9];
-        int startX = (int) Math.ceil(SCREEN_WIDTH / 2 - hotbarDimensions[0] / 2 + 3 * scalar);
+        int startX = (int) Math.ceil(
+            SCREEN_WIDTH / 2 - hotbarDimensions[0] / 2 + 3 * scalar
+        );
         int startY = (int) Math.floor(SCREEN_HEIGHT - 19 * scalar);
+        int[] y = {startY};
         for (int i = 0; i < 9; i++) {
             x[i] = (int) Math.floor(startX + i * 20 * scalar);
-            if (hotbar[i] >= 0) {
-                int[] hotbarNumbers = getTileParts(hotbar[i]);
-                g.drawImage(
-                    itemImages[hotbarNumbers[0]][hotbarNumbers[1]], x[i], startY, 40, 40, this
-                );
-            }
         }
+        int[][] unsqeeze = {hotbar};
+        drawItems(g, unsqeeze, x, y, scalar);
         g.drawImage(uiImages[3], x[hotbarSlot] - 8, startY - 8, 55, 55, this);
     }
 
@@ -271,17 +349,7 @@ public class Game extends JPanel implements
         for (int i = 0; i < 9; i++) {
             drawX[i] = startX + i * 20 * scalar;
         }
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 9; j++) {
-                if (inventory[i][j] >= 0) {
-                    int[] itemNumbers = getTileParts(inventory[i][j]);
-                    g.drawImage(
-                        itemImages[itemNumbers[0]][itemNumbers[1]], 
-                        drawX[j], drawY[i], 16 * scalar, 16 * scalar, this
-                    );
-                }
-            }
-        }
+        drawItems(g, inventory, drawX, drawY, scalar);
     }
 
     // movement related
@@ -410,21 +478,21 @@ public class Game extends JPanel implements
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, -1, -1, -1, -1, 1606099, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 17012099, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1609908, -1, -1, -1, -1, 160608, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1709908, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1701208, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 18, -1, 1803099, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1809904, -1, 180304, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 18, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -466,8 +534,8 @@ public class Game extends JPanel implements
         Scanner inFile = new Scanner(new File("data/inv.txt"));
         inventory[2] = hotbar;
         if (!inFile.hasNextLine()) {
-            hotbar[0] = 32;
-            hotbar[1] = 33;
+            hotbar[0] = 3201;
+            hotbar[1] = 3301;
             PrintWriter out = new PrintWriter(new FileWriter("data/inv.txt"));
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 9; j++) {
@@ -543,6 +611,8 @@ public class Game extends JPanel implements
         if (offScreenBuffer == null) {
             offScreenImage = createImage(SCREEN_WIDTH, SCREEN_HEIGHT);
             offScreenBuffer = offScreenImage.getGraphics();
+            offScreenBuffer.setFont(font);
+            // set colour here if needed
         }
         offScreenBuffer.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -584,9 +654,24 @@ public class Game extends JPanel implements
             }
         }
 
-        // for drawing objects
-        int[] drawn = new int[3];
-        // this needs to change, as objects lengths yk
+        int maxObjectWidth;
+        int maxObjectHeight;
+        if (cameraY <= 1260) {
+            maxObjectWidth = 10;
+            maxObjectHeight = 8;
+        } else {
+            maxObjectWidth = 3;
+            maxObjectHeight = 3;
+        }
+
+        startCol = Math.max(0, cameraX / TILE_LENGTH - maxObjectWidth);
+        endCol = Math.min(
+            map[0].length - 1, (cameraX + 12 * TILE_LENGTH) / TILE_LENGTH
+        );
+        startRow = Math.max(0, cameraY / TILE_LENGTH - maxObjectHeight);
+        endRow = Math.min(
+            map.length - 1, (cameraY + 9 * TILE_LENGTH) / TILE_LENGTH
+        );
         for (int row = startRow; row <= endRow; row++) {
             for (int col = startCol; col <= endCol; col++) {
                 int x = col * TILE_LENGTH - cameraX;
@@ -596,31 +681,12 @@ public class Game extends JPanel implements
                 Image image;
                 int scaledWidth, scaledHeight;
                 if (objectTile >= 0) {
-                    if (objectTile > 99) {
-                        // do stuff
-                        String stringTile = "" + objectTile;
-                        // remember that this wont work if it has to move 10 tiles etc
-                        String[] array = stringTile.split("0");
-                        objectNumbers = getTileParts(Integer.parseInt(array[0]));
-                        image = objectImages[objectNumbers[0]][objectNumbers[1]];
-                        scaledWidth = image.getWidth(this) * 4;
-                        scaledHeight = image.getHeight(this) * 4;
-                        if (Integer.parseInt(array[1]) == 99) {
-                            y = y - TILE_LENGTH * (Integer.parseInt(array[2]) - 1);
-                        } else if (Integer.parseInt(array[2]) == 99) {
-                            x = x - TILE_LENGTH * (Integer.parseInt(array[1]) - 1);
-                        } else {
-                            x = x - TILE_LENGTH * (Integer.parseInt(array[1]) - 1);
-                            y = y - TILE_LENGTH * (Integer.parseInt(array[2]) - 1);
-                        }
-                        // if (drawn[objectNumbers[0]] - 16 == 0) {
-                            offScreenBuffer.drawImage(
-                                image, x, y, scaledWidth, scaledHeight, this
-                            );
-                            // drawn[objectNumbers[0]] = 1;
-                        // }
-                    } else if (
-                        objectTile >= 0 && (map[row][col] == 16 || map[row][col] == 32)
+                    if (
+                        objectTile >= 0 && 
+                        (
+                            (map[row][col] == 16 || map[row][col] == 32) || 
+                            isFarmland(map[row][col])
+                        )
                     ) {
                         objectNumbers = getTileParts(objectTile);
                         image = objectImages[objectNumbers[0]][objectNumbers[1]];
@@ -718,8 +784,10 @@ public class Game extends JPanel implements
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        g.setColor(new Color(242, 236, 208));
+        g.setFont(font);
         drawMap(g);
-        drawPlayer(g);
+        drawPlayer(g, 4);
         drawUi(g);
         if (isInvOpen) {
             drawInventory(g);
@@ -753,14 +821,16 @@ public class Game extends JPanel implements
             );
             return;
         }
+        System.out.println("hotbar slot: " + hotbarSlot);
+        System.out.println("metadata value: " + hotbar[hotbarSlot]);
 
         // run animation even if tile is invalid!!!
-        if (hotbar[hotbarSlot] == 32) {
+        if (hotbar[hotbarSlot] / 100 == 32) {
             System.out.println("pressed at " + x + ", " + y);
             System.out.println("pressed tile: " + tileX + ", " + tileY);
             System.out.println("hoe tool");
             updateTile(tileX, tileY);
-        } else if (hotbar[hotbarSlot] == 33) {
+        } else if (hotbar[hotbarSlot] / 100 == 33) {
             // check if this is right after
             System.out.println("pressed at " + x + ", " + y);
             System.out.println("pressed tile: " + tileX + ", " + tileY);
