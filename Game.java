@@ -45,8 +45,12 @@ public class Game extends JPanel implements
     String lastDirection = "down";
 
     // animation
-    int animationFrame = 0;
-    int animationCounter = 0;
+    int movementAnimationFrame = 0;
+    int movementAnimationCounter = 0;
+    int actionAnimationFrame = 0;
+    int actionAnimationCounter = 0;
+    boolean isPlayingActionAnimation = false;
+    String currentAction = "";
     int animationSpeed = 4;
 
     // game state
@@ -220,17 +224,36 @@ public class Game extends JPanel implements
     }
 
     public void drawPlayer(Graphics g, int index) {
-        int startIndex = 0;
         int frameToDraw;
+  
+        if (isPlayingActionAnimation) {
+            int startIndex;
+            if (lastDirection.equals("down")) {
+                startIndex = index;
+            } else if (lastDirection.equals("right")) {
+                startIndex = index + 6;
+            } else if (lastDirection.equals("up")) {
+                startIndex = index + 12;
+            } else {
+                startIndex = index + 18;
+            }
+            frameToDraw = startIndex + actionAnimationFrame;
+            g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
+            return;
+        }
 
-        if (right) {
-            startIndex = 6 + index;
-        } else if (left) {
-            startIndex = 18 + index;
-        } else if (up) {
-            startIndex = 12 + index;
-        } else if (down) {
-            startIndex = 0 + index;
+        if (up || down || left || right) {
+            int startIndex;
+            if (right) {
+                startIndex = index + 6;
+            } else if (left) {
+                startIndex = index + 18;
+            } else if (up) {
+                startIndex = index + 12;
+            } else {
+                startIndex = index;
+            }
+            frameToDraw = startIndex + (movementAnimationFrame % 6);
         } else {
             if (lastDirection.equals("down")) {
                 frameToDraw = 0;
@@ -238,18 +261,12 @@ public class Game extends JPanel implements
                 frameToDraw = 1;
             } else if (lastDirection.equals("up")) {
                 frameToDraw = 2;
-            } else if (lastDirection.equals("left")) {
-                frameToDraw = 3;
             } else {
-                System.out.println("eee");
-                frameToDraw = 0;
+                frameToDraw = 3;
             }
-            g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
-            return;
         }
-        frameToDraw = startIndex + (animationFrame % 6);
         g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
-    }
+}
 
     public int[] getNumberPos(int x, int y) {
         return getNumberPos(x, y, 1);
@@ -388,14 +405,39 @@ public class Game extends JPanel implements
     // animation
     public void animatePlayer() {
         if (up || down || left || right) {
-            animationCounter++;
-            if (animationCounter >= animationSpeed) {
-                animationFrame++;
-                animationCounter = 0;
+            movementAnimationCounter++;
+            if (movementAnimationCounter >= animationSpeed) {
+                movementAnimationFrame++;
+                movementAnimationCounter = 0;
+            }
+            if (isPlayingActionAnimation) {
+                isPlayingActionAnimation = false;
+                actionAnimationFrame = 0;
+                actionAnimationCounter = 0;
             }
         } else {
-            animationFrame = 0;
+            movementAnimationFrame = 0;
         }
+
+        if (isPlayingActionAnimation) {
+            actionAnimationCounter++;
+            if (actionAnimationCounter >= animationSpeed) {
+                actionAnimationFrame++;
+                actionAnimationCounter = 0;
+
+                if (actionAnimationFrame >= 6) {
+                    isPlayingActionAnimation = false;
+                    actionAnimationFrame = 0;
+                }
+            }
+        }
+    }
+
+    public void startActionAnimation(String action) {
+        isPlayingActionAnimation = true;
+        currentAction = action;
+        actionAnimationFrame = 0;
+        actionAnimationCounter = 0;
     }
 
     // initializing the game
@@ -589,7 +631,10 @@ public class Game extends JPanel implements
         return changedMap;
     }
 
-    public static BufferedImage[] loadImages(File folder, boolean mod) throws IOException {
+    public static BufferedImage[] loadImages(
+        File folder, 
+        boolean mod
+    ) throws IOException {
         File[] files = folder.listFiles();
         int number = files.length;
         BufferedImage[] images = new BufferedImage[number];
@@ -787,7 +832,15 @@ public class Game extends JPanel implements
         g.setColor(new Color(242, 236, 208));
         g.setFont(font);
         drawMap(g);
-        drawPlayer(g, 4);
+        if (isPlayingActionAnimation) {
+            if (currentAction.equals("hoeing")) {
+                drawPlayer(g, 28);
+            } else {
+                drawPlayer(g, 52);
+            }
+        } else {
+            drawPlayer(g, 4);
+        }
         drawUi(g);
         if (isInvOpen) {
             drawInventory(g);
@@ -824,17 +877,17 @@ public class Game extends JPanel implements
         System.out.println("hotbar slot: " + hotbarSlot);
         System.out.println("metadata value: " + hotbar[hotbarSlot]);
 
-        // run animation even if tile is invalid!!!
         if (hotbar[hotbarSlot] / 100 == 32) {
             System.out.println("pressed at " + x + ", " + y);
             System.out.println("pressed tile: " + tileX + ", " + tileY);
             System.out.println("hoe tool");
+            startActionAnimation("hoeing");
             updateTile(tileX, tileY);
         } else if (hotbar[hotbarSlot] / 100 == 33) {
-            // check if this is right after
             System.out.println("pressed at " + x + ", " + y);
             System.out.println("pressed tile: " + tileX + ", " + tileY);
             System.out.println("water bucket");
+            startActionAnimation("watering");
             updateWateredTile(tileX, tileY);
         }
     }
