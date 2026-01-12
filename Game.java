@@ -32,6 +32,7 @@ public class Game extends JPanel implements
     static BufferedImage[][] itemImages = new BufferedImage[3][16];
     static BufferedImage[] playerImages;
     static BufferedImage[] uiImages;
+    static BufferedImage[] stateImages;
 
     Image offScreenImage;
     Graphics offScreenBuffer;
@@ -56,12 +57,16 @@ public class Game extends JPanel implements
     // game state
     int framesPassed = 0;
     int secondsPassed = 0;
+    String state = "game";
     
     // inventory related
-    boolean isInvOpen = false;
     int hotbarSlot = 0;
     static int[] hotbar = new int[9];
     static int[][] inventory = new int[3][9];
+
+    // store related
+    int storeSelected = -1;
+    static int[][] storeItems = new int[6][6];
 
     // other
     Font font;
@@ -369,7 +374,55 @@ public class Game extends JPanel implements
         drawItems(g, inventory, drawX, drawY, scalar);
     }
 
-    // movement related
+    public void drawStore(Graphics g) {
+        int scalar = 3;
+        g.drawImage(stateImages[0], 0, 0, this);
+        int[] storeInvDim = getImageDim(uiImages[4], scalar);
+        g.drawImage(uiImages[4], 30, 90, storeInvDim[0], storeInvDim[1], this);
+        int startX = 30 + 7 * scalar;
+        int startY = 90 + 7 * scalar;
+        int drawX[] = new int[6];
+        int drawY[] = new int[6];
+        for (int i = 0; i < 6; i++) {
+            drawX[i] = startX + i * 20 * scalar;
+            drawY[i] = startY + i * 20 * scalar;
+        }
+        drawItems(g, storeItems, drawX, drawY, 3);
+        if (storeSelected != -1) {
+            g.drawImage(uiImages[5], 463, 90, this);
+        }
+    }
+
+    // clicking related
+    public int getTileClicked(
+        int clickX, 
+        int clickY, 
+        int startX, 
+        int startY, 
+        int length,
+        double scalar
+    ) {
+        int tileSize = (int) (18 * scalar);
+        int spacing = (int) (2 * scalar);
+        int totalTileWidth = tileSize + spacing;
+        int relativeX = clickX - startX;
+        int relativeY = clickY - startY;
+        if (relativeX < 0 || relativeY < 0 || relativeY >= tileSize) {
+            System.out.println("e");
+            System.out.println(relativeX + " " + relativeY);
+            return -1;
+        }
+        int slot = relativeX / totalTileWidth;
+        int positionInSlot = relativeX % totalTileWidth;
+        if (positionInSlot >= tileSize || slot >= length) {
+            System.out.println(positionInSlot + "   " + slot);
+            System.out.println("ee");
+            return -1;
+        }
+        return slot;
+    }
+
+    // movement/keyboard related
     public void move() {
         // change this later so its only in bounds for all directions
 		if (left) {
@@ -572,6 +625,19 @@ public class Game extends JPanel implements
         return map;
     }
 
+    public static int[][] getDefaultStore() {
+        // likely change this for progression yk
+        int[][] store = {
+            {1610, 1710, 1810, 1910, 2010, 2110},
+            {2210, 2310, 2410, 2510, 2610, 2710},
+            {3201, -1, -1, -1, -1, -1},
+            {3301, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1}
+        };
+        return store;
+    }
+
     public static void loadInventory() throws IOException {
         Scanner inFile = new Scanner(new File("data/inv.txt"));
         inventory[2] = hotbar;
@@ -762,6 +828,7 @@ public class Game extends JPanel implements
         File inventoryFile = new File("data/inv.txt");
         File mapFile = new File("data/map.txt");
         File objectFile = new File("data/objectMap.txt");
+        File storeFile = new File("data/store.txt");
 
         if (!folder.exists()) {
             if (!folder.mkdir()) {
@@ -772,6 +839,7 @@ public class Game extends JPanel implements
         boolean isInvCreated = createFile(inventoryFile);
         boolean isMapCreated = createFile(mapFile);
         boolean isObjectCreated = createFile(objectFile);
+        boolean isStoreCreated = createFile(storeFile);
 
         if (mapFile.length() == 0) {
             PrintWriter out = new PrintWriter(new FileWriter("data/map.txt"));
@@ -803,6 +871,21 @@ public class Game extends JPanel implements
             int[][] loadedObjectsMap = loadMap(objectFile);
             objectsMap = loadedObjectsMap;
         }
+        if (storeFile.length() == 0) {
+            PrintWriter out = new PrintWriter(new FileWriter("data/store.txt"));
+            int[][] defaultStore = getDefaultStore();
+            storeItems = defaultStore;
+            for (int i = 0; i < storeItems.length; i++) {
+                for (int j = 0; j < storeItems[i].length; j++) {
+                    out.print(storeItems[i][j] + " ");
+                }
+                out.println();
+            }
+            out.close();
+        } else {
+            int[][] loadedStoreItems = loadMap(storeFile);
+            storeItems = loadedStoreItems;
+        }
         wetTilesMap = new int[map.length][map[0].length];
         loadInventory();
 
@@ -822,8 +905,12 @@ public class Game extends JPanel implements
 
         playerImages = loadImages(new File("assets/player"), false);
         uiImages = loadImages(new File("assets/ui"), false);
+        stateImages = loadImages(new File("assets/state"), false);
 
-        return isGeneralCreated && isInvCreated && isMapCreated && isObjectCreated;
+        return (
+            isGeneralCreated && isInvCreated && isMapCreated && isObjectCreated && 
+            isStoreCreated
+        );
     }
 
     @Override
@@ -831,22 +918,28 @@ public class Game extends JPanel implements
         super.paintComponent(g);
         g.setColor(new Color(242, 236, 208));
         g.setFont(font);
-        drawMap(g);
-        if (isPlayingActionAnimation) {
-            if (currentAction.equals("hoeing")) {
-                drawPlayer(g, 28);
+        if (state.equals("game") || state.equals("inv")) {
+            drawMap(g);
+            if (isPlayingActionAnimation) {
+                if (currentAction.equals("hoeing")) {
+                    drawPlayer(g, 28);
+                } else {
+                    drawPlayer(g, 52);
+                }
             } else {
-                drawPlayer(g, 52);
+                drawPlayer(g, 4);
             }
-        } else {
-            drawPlayer(g, 4);
+            drawUi(g);
+            if (state.equals("inv")) {
+                drawInventory(g);
+            }
+            cameraLocation.setText("camera: " + cameraX + " " + cameraY);
+            playerLocation.setText("player: " + playerTileX + " " + playerTileY);
+        } else if (state.equals("store")) {
+            drawStore(g);
+            cameraLocation.setText("");
+            playerLocation.setText("");
         }
-        drawUi(g);
-        if (isInvOpen) {
-            drawInventory(g);
-        }
-        cameraLocation.setText("camera: " + cameraX + " " + cameraY);
-        playerLocation.setText("player: " + playerTileX + " " + playerTileY);
     }
 
     // mouse related methods
@@ -858,37 +951,45 @@ public class Game extends JPanel implements
         int y = actualY + cameraY;
         int tileX = x / TILE_LENGTH;
         int tileY = y / TILE_LENGTH;
-        if (isInvOpen) {
-            // do stuff
-            return;
-        }
-        // hotbar is drawn at 157 & 521 at top left corner
-        if (
-            actualX > 159 && actualX < 159 + 455 && 
-            actualY > 523 && actualY < SCREEN_HEIGHT
-        ) {
-            // change this to actual hotbar slot later
-            hotbarSlot = 0;
-            System.out.println(
-                "hotbar clicked at " + actualX + " " + actualY + " slot: " + hotbarSlot
-            );
-            return;
-        }
-        System.out.println("hotbar slot: " + hotbarSlot);
-        System.out.println("metadata value: " + hotbar[hotbarSlot]);
+        if (state.equals("game")) {
+            // hotbar is drawn at 157 & 521 at top left corner
+            if (
+                actualX > 159 && actualX < 159 + 455 && 
+                actualY > 523 && actualY < SCREEN_HEIGHT
+            ) {
+                // change this to actual hotbar slot later
+                int checkHotbarSlot = getTileClicked(
+                    actualX, actualY, 159 + 3, 521 + 3, 9, 2.5
+                );
+                if (checkHotbarSlot >= 0) {
+                    hotbarSlot = checkHotbarSlot;
+                }
+                System.out.println(
+                    "hotbar clicked at " + actualX + " " + 
+                    actualY + " slot: " + hotbarSlot
+                );
+                return;
+            }
+            System.out.println("hotbar slot: " + hotbarSlot);
+            System.out.println("metadata value: " + hotbar[hotbarSlot]);
 
-        if (hotbar[hotbarSlot] / 100 == 32) {
-            System.out.println("pressed at " + x + ", " + y);
-            System.out.println("pressed tile: " + tileX + ", " + tileY);
-            System.out.println("hoe tool");
-            startActionAnimation("hoeing");
-            updateTile(tileX, tileY);
-        } else if (hotbar[hotbarSlot] / 100 == 33) {
-            System.out.println("pressed at " + x + ", " + y);
-            System.out.println("pressed tile: " + tileX + ", " + tileY);
-            System.out.println("water bucket");
-            startActionAnimation("watering");
-            updateWateredTile(tileX, tileY);
+            if (hotbar[hotbarSlot] / 100 == 32) {
+                System.out.println("pressed at " + x + ", " + y);
+                System.out.println("pressed tile: " + tileX + ", " + tileY);
+                System.out.println("hoe tool");
+                startActionAnimation("hoeing");
+                updateTile(tileX, tileY);
+            } else if (hotbar[hotbarSlot] / 100 == 33) {
+                System.out.println("pressed at " + x + ", " + y);
+                System.out.println("pressed tile: " + tileX + ", " + tileY);
+                System.out.println("water bucket");
+                startActionAnimation("watering");
+                updateWateredTile(tileX, tileY);
+            }
+        } else if (state.equals("inv")) {
+            // do stuff, like dragging stuff etc
+        } else if (state.equals("store")) {
+            
         }
     }
 
@@ -927,7 +1028,7 @@ public class Game extends JPanel implements
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
         // continue to add other states where this shouldnt apply to and stuff
-        if (!isInvOpen) {
+        if (state.equals("game")) {
             if (key == KeyEvent.VK_A) {
                 left = true;
                 right = false;
@@ -945,7 +1046,11 @@ public class Game extends JPanel implements
             }
         }
         if (key == KeyEvent.VK_E) {
-            isInvOpen = !isInvOpen;
+            if (state.equals("inv")) {
+                state = "game";
+            } else {
+                state = "inv";
+            }
         } 
     }
 
@@ -978,6 +1083,9 @@ public class Game extends JPanel implements
             if (framesPassed == FPS) {
                 framesPassed = 0;
                 secondsPassed += 1;
+            }
+            if (playerTileX == 31 && playerTileY == 18) {
+                state = "store";
             }
 			this.repaint();
 			try {
