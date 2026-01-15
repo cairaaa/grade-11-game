@@ -20,7 +20,8 @@ public class Game extends JPanel implements
 
     // global variables
     Thread thread;
-    JPanel panel;
+    static boolean initialized;
+    static boolean wait;
 
     // map/image related
     static int[][] map;
@@ -81,8 +82,6 @@ public class Game extends JPanel implements
         setPreferredSize(
             new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT)
         );
-        thread = new Thread(this);
-		thread.start();
 
         addMouseListener(this);
         addKeyListener(this);
@@ -99,11 +98,14 @@ public class Game extends JPanel implements
         cameraLocation = new JLabel("camera: " + cameraX + " " + cameraY);
         cameraLocation.setFont(font);
         // setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        add(cameraLocation);
+        // add(cameraLocation);
         
         playerLocation = new JLabel("player: " + playerTileX + " " + playerTileY);
         playerLocation.setFont(font);
-        add(playerLocation);
+        // add(playerLocation);
+
+        thread = new Thread(this);
+		thread.start();
     }
 
     // helper functions
@@ -117,10 +119,6 @@ public class Game extends JPanel implements
         return array;
     }
 
-    public int[] getImageDim(Image image) {
-        return getImageDim(image, 1);
-    }
-
     public int[] getImageDim(Image image, double scalar) {
         int[] imageDimensions = {
             (int) Math.floor(image.getWidth(this) * scalar), 
@@ -129,7 +127,6 @@ public class Game extends JPanel implements
         return imageDimensions;
     }
 
-    // remove these helper functions later
     public void printArray(int[] array) {
         for (int i = 0; i < array.length; i++) {
             System.out.print(array[i] + " ");
@@ -146,7 +143,127 @@ public class Game extends JPanel implements
         System.out.println();
     }
 
-    // drawing stuff
+    public String[][] getStoreItemInfo(int num) {
+        String[][] itemInfo = new String[20][5];
+        if (num == 0) {
+            itemInfo[0][0] = "Wheat Seed";
+            itemInfo[0][1] = "The starting crop";
+            itemInfo[0][2] = "2";
+            itemInfo[0][3] = "100";
+            itemInfo[0][4] = "50";
+        } else if (num == 1) {
+            itemInfo[1][0] = "Carrot Seed";
+            itemInfo[1][1] = "A simple plant";
+            itemInfo[1][2] = "2";
+            itemInfo[1][3] = "175";
+            itemInfo[1][4] = "100";
+        } else if (num == 2) {
+            itemInfo[2][0] = "Celery Seed";
+            itemInfo[2][1] = "";
+            itemInfo[2][2] = "2-3";
+            itemInfo[2][3] = "300";
+            itemInfo[2][4] = "200";
+        } else if (num == 3) {
+            itemInfo[3][0] = "Lettuce Seed";
+            itemInfo[3][1] = "";
+            itemInfo[3][2] = "2-3";
+            itemInfo[3][3] = "700";
+            itemInfo[3][4] = "500";
+        } else if (num == 4) {
+            itemInfo[4][0] = "Pea Seed";
+            itemInfo[4][1] = "";
+            itemInfo[4][2] = "3";
+            itemInfo[4][3] = "1500";
+            itemInfo[4][4] = "1000";
+        } else if (num == 5) {
+            itemInfo[5][0] = "Onion Seed";
+            itemInfo[5][1] = "(talk about how it varies between days a lot)";
+            itemInfo[5][2] = "2-4";
+            itemInfo[5][3] = "3000";
+            itemInfo[5][4] = "2000";
+        } else if (num == 6) {
+            itemInfo[6][0] = "Radish Seed";
+            itemInfo[6][1] = "";
+            itemInfo[6][2] = "3";
+            itemInfo[6][3] = "3000";
+            itemInfo[6][4] = "2200";
+        } else if (num == 7) {
+            itemInfo[7][0] = "Potato Seed";
+            itemInfo[7][1] = "";
+            itemInfo[7][2] = "4";
+            itemInfo[7][3] = "5000";
+            itemInfo[7][4] = "3500";
+        } else if (num == 8) {
+            itemInfo[8][0] = "Corn Seed";
+            itemInfo[8][1] = "";
+            itemInfo[8][2] = "2";
+            itemInfo[8][3] = "4750";
+            itemInfo[8][4] = "4000";
+        } else if (num == 9) {
+            itemInfo[9][0] = "Grape Seed";
+            itemInfo[9][1] = (
+                "After they are planted, they will stay and " + 
+                "continue to produce grapes every 3 days"
+            );
+            itemInfo[9][2] = "3";
+            itemInfo[9][3] = "300";
+            itemInfo[9][4] = "5000";
+        } else if (num == 10) {
+            itemInfo[10][0] = "Pumpkin Seed";
+            itemInfo[10][1] = "";
+            itemInfo[10][2] = "5";
+            itemInfo[10][3] = "6000";
+            itemInfo[10][4] = "5000";
+        } else if (num == 11) {
+            itemInfo[11][0] = "Strawberry Seed";
+            itemInfo[11][1] = "";
+            itemInfo[11][2] = "6";
+            itemInfo[11][3] = "12000";
+            itemInfo[11][4] = "10000";
+        } else if (num == 12) {
+            // fix all of this laters
+            itemInfo[12][0] = "Hoe Upgrade 1";
+            itemInfo[12][1] = "";
+            itemInfo[12][2] = "-1";
+            itemInfo[12][3] = "-1";
+            itemInfo[12][4] = "5000";
+        } else if (num == 13) {
+            itemInfo[13][0] = "Hoe Upgrade 2";
+            itemInfo[13][1] = "";
+            itemInfo[13][2] = "-1";
+            itemInfo[13][3] = "-1";
+            itemInfo[13][4] = "20000";
+        } else if (num == 14) {
+            itemInfo[14][0] = "Hoe Upgrade 3";
+            itemInfo[14][1] = "";
+            itemInfo[14][2] = "-1";
+            itemInfo[14][3] = "-1";
+            itemInfo[14][4] = "50000";
+        } else if (num == 18) {
+            itemInfo[18][0] = "Watering Can 1";
+            itemInfo[18][1] = (
+                "This upgrade increases the amount of tiles able to be watered"
+            );
+            itemInfo[18][2] = "-1";
+            itemInfo[18][3] = "-1";
+            itemInfo[18][4] = "2000";
+        } else if (num == 19) {
+            itemInfo[19][0] = "Watering Can 2";
+            itemInfo[19][1] = "";
+            itemInfo[19][2] = "-1";
+            itemInfo[19][3] = "-1";
+            itemInfo[19][4] = "10000";
+        } else if (num == 20) {
+            itemInfo[20][0] = "Watering Can 3";
+            itemInfo[20][1] = "";
+            itemInfo[20][2] = "-1";
+            itemInfo[20][3] = "-1";
+            itemInfo[20][4] = "30000";
+        }
+        return itemInfo;
+    }
+
+    // updating arrays
     public boolean isFarmland(int value) {
         return value >= 0 && value < 16;
     }
@@ -228,6 +345,7 @@ public class Game extends JPanel implements
         wetTilesMap[row][col] = 1;
     }
 
+    // drawing stuff
     public void drawPlayer(Graphics g, int index) {
         int frameToDraw;
   
@@ -271,10 +389,6 @@ public class Game extends JPanel implements
             }
         }
         g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
-}
-
-    public int[] getNumberPos(int x, int y) {
-        return getNumberPos(x, y, 1);
     }
 
     public int[] getNumberPos(int x, int y, double scalar) {
@@ -389,6 +503,7 @@ public class Game extends JPanel implements
         }
         drawItems(g, storeItems, drawX, drawY, 3);
         if (storeSelected != -1) {
+            // call method here to see what to draw
             g.drawImage(uiImages[5], 463, 90, this);
         }
     }
@@ -408,15 +523,11 @@ public class Game extends JPanel implements
         int relativeX = clickX - startX;
         int relativeY = clickY - startY;
         if (relativeX < 0 || relativeY < 0 || relativeY >= tileSize) {
-            System.out.println("e");
-            System.out.println(relativeX + " " + relativeY);
             return -1;
         }
         int slot = relativeX / totalTileWidth;
         int positionInSlot = relativeX % totalTileWidth;
         if (positionInSlot >= tileSize || slot >= length) {
-            System.out.println(positionInSlot + "   " + slot);
-            System.out.println("ee");
             return -1;
         }
         return slot;
@@ -813,16 +924,7 @@ public class Game extends JPanel implements
         g.drawImage(offScreenImage, 0, 0, this);
     }    
 
-    public static boolean createFile(File file) throws IOException {
-        if (!file.exists()) {
-            if (!file.createNewFile()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public static boolean initialize() throws IOException {
+    public static boolean initialize() {
         File folder = new File("data/");
         File generalFile = new File("data/general.txt");
         File inventoryFile = new File("data/inv.txt");
@@ -835,87 +937,97 @@ public class Game extends JPanel implements
                 return false;
             }
         }
-        boolean isGeneralCreated = createFile(generalFile);
-        boolean isInvCreated = createFile(inventoryFile);
-        boolean isMapCreated = createFile(mapFile);
-        boolean isObjectCreated = createFile(objectFile);
-        boolean isStoreCreated = createFile(storeFile);
 
-        if (mapFile.length() == 0) {
-            PrintWriter out = new PrintWriter(new FileWriter("data/map.txt"));
-            int[][] defaultMap = getDefaultMap();
-            map = defaultMap;
-            for (int i = 0; i < map.length; i++) {
-                for (int j = 0; j < map[i].length; j++) {
-                    out.print(map[i][j] + " ");
-                }
-                out.println();
+        try {
+            if (generalFile.length() == 0) {
+                PrintWriter out = new PrintWriter(new FileWriter("data/general.txt"));
+                out.close();
             }
-            out.close();
-        } else {
-            int[][] loadedMap = loadMap(mapFile);
-            map = loadedMap;
-        }
-        if (objectFile.length() == 0) {
-            PrintWriter out = new PrintWriter(new FileWriter("data/objectMap.txt"));
-            int[][] defaultMap = getDefaultObjectMap();
-            objectsMap = defaultMap;
-            for (int i = 0; i < objectsMap.length; i++) {
-                for (int j = 0; j < objectsMap[i].length; j++) {
-                    out.print(objectsMap[i][j] + " ");
-                }
-                out.println();
+            if (inventoryFile.length() == 0) {
+                PrintWriter out = new PrintWriter(new FileWriter("data/inv.txt"));
+                out.close();
             }
-            out.close();
-        } else {
-            int[][] loadedObjectsMap = loadMap(objectFile);
-            objectsMap = loadedObjectsMap;
-        }
-        if (storeFile.length() == 0) {
-            PrintWriter out = new PrintWriter(new FileWriter("data/store.txt"));
-            int[][] defaultStore = getDefaultStore();
-            storeItems = defaultStore;
-            for (int i = 0; i < storeItems.length; i++) {
-                for (int j = 0; j < storeItems[i].length; j++) {
-                    out.print(storeItems[i][j] + " ");
+            if (mapFile.length() == 0) {
+                PrintWriter out = new PrintWriter(new FileWriter("data/map.txt"));
+                int[][] defaultMap = getDefaultMap();
+                map = defaultMap;
+                for (int i = 0; i < map.length; i++) {
+                    for (int j = 0; j < map[i].length; j++) {
+                        out.print(map[i][j] + " ");
+                    }
+                    out.println();
                 }
-                out.println();
+                out.close();
+            } else {
+                int[][] loadedMap = loadMap(mapFile);
+                map = loadedMap;
             }
-            out.close();
-        } else {
-            int[][] loadedStoreItems = loadMap(storeFile);
-            storeItems = loadedStoreItems;
+            if (objectFile.length() == 0) {
+                PrintWriter out = new PrintWriter(new FileWriter("data/objectMap.txt"));
+                int[][] defaultMap = getDefaultObjectMap();
+                objectsMap = defaultMap;
+                for (int i = 0; i < objectsMap.length; i++) {
+                    for (int j = 0; j < objectsMap[i].length; j++) {
+                        out.print(objectsMap[i][j] + " ");
+                    }
+                    out.println();
+                }
+                out.close();
+            } else {
+                int[][] loadedObjectsMap = loadMap(objectFile);
+                objectsMap = loadedObjectsMap;
+            }
+            if (storeFile.length() == 0) {
+                PrintWriter out = new PrintWriter(new FileWriter("data/store.txt"));
+                int[][] defaultStore = getDefaultStore();
+                storeItems = defaultStore;
+                for (int i = 0; i < storeItems.length; i++) {
+                    for (int j = 0; j < storeItems[i].length; j++) {
+                        out.print(storeItems[i][j] + " ");
+                    }
+                    out.println();
+                }
+                out.close();
+            } else {
+                int[][] loadedStoreItems = loadMap(storeFile);
+                storeItems = loadedStoreItems;
+            }
+
+            wetTilesMap = new int[map.length][map[0].length];
+            loadInventory();
+
+            tileImages[0] = loadImages(new File("assets/tiles/farmland"), true);
+            tileImages[1] = loadImages(new File("assets/tiles/grass"), true);
+            tileImages[2] = loadImages(new File("assets/tiles/misc"), true);
+            tileImages[3] = loadImages(new File("assets/tiles/water"), true);
+
+            objectImages[0] = loadImages(new File("assets/objects/extra"), true);
+            objectImages[1] = loadImages(new File("assets/objects/structures"), true);
+            objectImages[2] = loadImages(new File("assets/objects/trees"), true);
+            objectImages[3] = loadImages(
+                new File("assets/objects/wet-farmland"), true
+            );
+
+            itemImages[0] = loadImages(new File("assets/items/crops"), true);
+            itemImages[1] = loadImages(new File("assets/items/seeds"), true);
+            itemImages[2] = loadImages(new File("assets/items/tools"), true);
+
+            playerImages = loadImages(new File("assets/player"), false);
+            uiImages = loadImages(new File("assets/ui"), false);
+            stateImages = loadImages(new File("assets/state"), false);
+        } catch (IOException e) {
+
         }
-        wetTilesMap = new int[map.length][map[0].length];
-        loadInventory();
-
-        tileImages[0] = loadImages(new File("assets/tiles/farmland"), true);
-        tileImages[1] = loadImages(new File("assets/tiles/grass"), true);
-        tileImages[2] = loadImages(new File("assets/tiles/misc"), true);
-        tileImages[3] = loadImages(new File("assets/tiles/water"), true);
-
-        objectImages[0] = loadImages(new File("assets/objects/extra"), true);
-        objectImages[1] = loadImages(new File("assets/objects/structures"), true);
-        objectImages[2] = loadImages(new File("assets/objects/trees"), true);
-        objectImages[3] = loadImages(new File("assets/objects/wet-farmland"), true);
-
-        itemImages[0] = loadImages(new File("assets/items/crops"), true);
-        itemImages[1] = loadImages(new File("assets/items/seeds"), true);
-        itemImages[2] = loadImages(new File("assets/items/tools"), true);
-
-        playerImages = loadImages(new File("assets/player"), false);
-        uiImages = loadImages(new File("assets/ui"), false);
-        stateImages = loadImages(new File("assets/state"), false);
-
-        return (
-            isGeneralCreated && isInvCreated && isMapCreated && isObjectCreated && 
-            isStoreCreated
-        );
+        System.out.println("e");
+        return true;
     }
 
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        if (!initialized) {
+            return;
+        }
         g.setColor(new Color(242, 236, 208));
         g.setFont(font);
         if (state.equals("game") || state.equals("inv")) {
@@ -989,7 +1101,24 @@ public class Game extends JPanel implements
         } else if (state.equals("inv")) {
             // do stuff, like dragging stuff etc
         } else if (state.equals("store")) {
-            
+            // fix this later
+            int scalar = 3;
+            for (int i = 0; i < 5; i++) {
+                int clicked = getTileClicked(
+                    actualX, actualY, 
+                    30 + (7 * scalar), 
+                    90 + (7 * scalar) + (i * 20 * scalar), 
+                    6, scalar
+                );
+                if (clicked != -1) {
+                    storeSelected = i * 6 + clicked;
+                    System.out.println(storeSelected);
+                    System.out.println(storeSelected % 6 + " " + storeSelected / 6);
+                    break;
+                } else {
+                    System.out.println(i + " i , nothing");
+                }
+            }
         }
     }
 
@@ -1048,10 +1177,19 @@ public class Game extends JPanel implements
         if (key == KeyEvent.VK_E) {
             if (state.equals("inv")) {
                 state = "game";
-            } else {
+            } else if (state.equals("game")) {
                 state = "inv";
             }
-        } 
+        }
+        if (key == KeyEvent.VK_ESCAPE) {
+            if (state.equals("store")) {
+                state = "game";
+                cameraY = 960;
+                lastDirection = "down";
+            } else if (state.equals("inv")) {
+                state = "game";
+            }
+        }
     }
 
     @Override 
@@ -1075,6 +1213,8 @@ public class Game extends JPanel implements
 
     @Override
 	public void run() {
+        initialized = initialize();
+        wait = false;
 		while (true) {
 			// main game loop
             move();
@@ -1098,11 +1238,13 @@ public class Game extends JPanel implements
 
     public static void main(String[] args) throws IOException, FontFormatException {
         System.out.println("hello world!");
-        // do smth if it fails or smth or put this in constructor?? idk
-        System.out.println("initialize: " + initialize());
         JFrame frame = new JFrame("Game");
         Game panel = new Game();
+        wait = true;
 
+        while (wait) {
+            System.out.print("");
+        }
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         // frame.setResizable(false);
         frame.add(panel);
