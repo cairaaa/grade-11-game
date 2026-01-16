@@ -129,6 +129,12 @@ public class Game extends JPanel implements
         return array;
     }
 
+    public int[] getCropInfo(int num) {
+        // make this for in the objects array, since the numbers have to be different
+        int[] array = {};
+        return array;
+    }
+
     public int[] getImageDim(Image image) {
         int[] imageDimensions = {
             (int) Math.floor(image.getWidth(this)), 
@@ -473,8 +479,28 @@ public class Game extends JPanel implements
         return false;
     }
 
+    // move this later
+    public int[] getCropType(int row, int col) {
+        if (row > 0) {
+            int num = objectsMap[row - 1][col];
+            if (num >= 100) {
+                int[] array = getItemInfo(num);
+                return array;
+            }
+        }
+        int[] array = {-1, -1};
+        return array;
+    }
+
     public void updateCrop(int col, int row) {
-        // add planting logic here
+        if (!isFarmland(map[row][col])) {
+            return;
+        }
+        if (objectsMap[row - 1][col] != -1) {
+            return;
+        }
+        int item = getItemInfo(hotbar[hotbarSlot])[0];
+        objectsMap[row - 1][col] = item * 100;
     }
 
     // drawing stuff
@@ -1120,10 +1146,14 @@ public class Game extends JPanel implements
                     if (
                         objectTile >= 0 && 
                         (
-                            (map[row][col] == 16 || map[row][col] == 32) || 
+                            ((map[row][col] >= 16 || map[row][col] < 30) || 
+                            map[row][col] == 32) || 
                             isFarmland(map[row][col])
                         )
                     ) {
+                        if (objectTile > 100) {
+                            // this means that it is a crop
+                        }
                         objectNumbers = getTileParts(objectTile);
                         image = objectImages[objectNumbers[0]][objectNumbers[1]];
                         scaledWidth = image.getWidth(this) * 4;
@@ -1236,8 +1266,23 @@ public class Game extends JPanel implements
             };
             houseObjects = objectHouseMap;
             // can add trophy here if the user has one??
-            // add loading for the object crops, 
-            // for loop for folder names and use loadImages?
+            // check if this is correct later
+            String[] cropFolders = (new File("assets/object-crops")).list();
+            for (int i = 0; i < 12; i++) {
+                String directory = null;
+                for (int j = 0; j < cropFolders.length; j++) {
+                    if (Integer.parseInt(cropFolders[j].substring(0, 2)) == i) {
+                        directory = cropFolders[j];
+                        break;
+                    }
+                }
+                if (directory == null) {
+                    directory = "error";
+                }
+                cropImages[i] = loadImages(
+                    new File("assets/object-crops/" + directory), false
+                );
+            }
 
             wetTilesMap = new int[map.length][map[0].length];
             loadInventory();
