@@ -168,15 +168,15 @@ public class Game extends JPanel implements
             itemInfo[0][1] = "16";
             itemInfo[0][2] = "The starting crop";
             itemInfo[0][3] = "2";
-            itemInfo[0][4] = "100";
-            itemInfo[0][5] = "50";
+            itemInfo[0][4] = "10";
+            itemInfo[0][5] = "5";
         } else if (num == 1) {
             itemInfo[1][0] = "Carrot Seed";
             itemInfo[1][1] = "17";
             itemInfo[1][2] = "A simple plant";
             itemInfo[1][3] = "2";
-            itemInfo[1][4] = "175";
-            itemInfo[1][5] = "100";
+            itemInfo[1][4] = "18";
+            itemInfo[1][5] = "10";
         } else if (num == 2) {
             itemInfo[2][0] = "Celery Seed";
             itemInfo[2][1] = "18";
@@ -186,8 +186,8 @@ public class Game extends JPanel implements
                 "chance it grows in 3 days"
             );
             itemInfo[2][3] = "2-3";
-            itemInfo[2][4] = "300";
-            itemInfo[2][5] = "200";
+            itemInfo[2][4] = "35";
+            itemInfo[2][5] = "20";
         } else if (num == 3) {
             itemInfo[3][0] = "Lettuce Seed";
             itemInfo[3][1] = "19";
@@ -197,8 +197,8 @@ public class Game extends JPanel implements
                 "chance it grows in 3 days"
             );
             itemInfo[3][3] = "2-3";
-            itemInfo[3][4] = "700";
-            itemInfo[3][5] = "500";
+            itemInfo[3][4] = "80";
+            itemInfo[3][5] = "50";
         } else if (num == 4) {
             itemInfo[4][0] = "Pea Seed";
             itemInfo[4][1] = "20";
@@ -207,8 +207,8 @@ public class Game extends JPanel implements
                 "grows in 3 days"
             );
             itemInfo[4][3] = "3";
-            itemInfo[4][4] = "1500";
-            itemInfo[4][5] = "1000";
+            itemInfo[4][4] = "150";
+            itemInfo[4][5] = "100";
         } else if (num == 5) {
             itemInfo[5][0] = "Onion Seed";
             itemInfo[5][1] = "21";
@@ -218,8 +218,8 @@ public class Game extends JPanel implements
                 "crop"
             );
             itemInfo[5][3] = "2-4";
-            itemInfo[5][4] = "3000";
-            itemInfo[5][5] = "2000";
+            itemInfo[5][4] = "300";
+            itemInfo[5][5] = "200";
         } else if (num == 6) {
             itemInfo[6][0] = "Radish Seed";
             itemInfo[6][1] = "22";
@@ -228,8 +228,8 @@ public class Game extends JPanel implements
                 "days it takes to grow"
             );
             itemInfo[6][3] = "2-4";
-            itemInfo[6][4] = "3000";
-            itemInfo[6][5] = "2200";
+            itemInfo[6][4] = "300";
+            itemInfo[6][5] = "220";
         } else if (num == 7) {
             itemInfo[7][0] = "Potato Seed";
             itemInfo[7][1] = "23";
@@ -238,8 +238,8 @@ public class Game extends JPanel implements
                 "grows in 4 days"
             );
             itemInfo[7][3] = "4";
-            itemInfo[7][4] = "5000";
-            itemInfo[7][5] = "3500";
+            itemInfo[7][4] = "470";
+            itemInfo[7][5] = "350";
         } else if (num == 8) {
             itemInfo[8][0] = "Corn Seed";
             itemInfo[8][1] = "24";
@@ -248,8 +248,8 @@ public class Game extends JPanel implements
                 "but sells for less"
             );
             itemInfo[8][3] = "2";
-            itemInfo[8][4] = "4750";
-            itemInfo[8][5] = "4000";
+            itemInfo[8][4] = "570";
+            itemInfo[8][5] = "500";
         } else if (num == 9) {
             itemInfo[9][0] = "Grape Seed";
             itemInfo[9][1] = "25";
@@ -259,8 +259,8 @@ public class Game extends JPanel implements
                 "grapes every 3 days"
             );
             itemInfo[9][3] = "3";
-            itemInfo[9][4] = "300";
-            itemInfo[9][5] = "5000";
+            itemInfo[9][4] = "200";
+            itemInfo[9][5] = "1000";
         } else if (num == 10) {
             itemInfo[10][0] = "Pumpkin Seed";
             itemInfo[10][1] = "26";
@@ -269,8 +269,8 @@ public class Game extends JPanel implements
                 "grows in 5 days"
             );
             itemInfo[10][3] = "5";
-            itemInfo[10][4] = "7000";
-            itemInfo[10][5] = "5000";
+            itemInfo[10][4] = "1800";
+            itemInfo[10][5] = "1500";
         } else if (num == 11) {
             itemInfo[11][0] = "Strawberry Seed";
             itemInfo[11][1] = "27";
@@ -279,8 +279,8 @@ public class Game extends JPanel implements
                 "grows in 6 days"
             );
             itemInfo[11][3] = "6";
-            itemInfo[11][4] = "13500";
-            itemInfo[11][5] = "10000";
+            itemInfo[11][4] = "3000";
+            itemInfo[11][5] = "2500";
         } else if (num == 12) {
             // fix all of this laters
             itemInfo[12][0] = "Hoe Upgrade 1";
@@ -291,7 +291,7 @@ public class Game extends JPanel implements
             );
             itemInfo[12][3] = "-1";
             itemInfo[12][4] = "-1";
-            itemInfo[12][5] = "5000";
+            itemInfo[12][5] = "1000";
         } else if (num == 13) {
             itemInfo[13][0] = "Hoe Upgrade 2";
             itemInfo[13][1] = "35";
@@ -301,7 +301,7 @@ public class Game extends JPanel implements
             );
             itemInfo[13][3] = "-1";
             itemInfo[13][4] = "-1";
-            itemInfo[13][5] = "20000";
+            itemInfo[13][5] = "5000";
         } else if (num == 14) {
             itemInfo[14][0] = "Hoe Upgrade 3";
             itemInfo[14][1] = "36";
@@ -311,7 +311,7 @@ public class Game extends JPanel implements
             );
             itemInfo[14][3] = "-1";
             itemInfo[14][4] = "-1";
-            itemInfo[14][5] = "50000";
+            itemInfo[14][5] = "20000";
         } else if (num == 18) {
             itemInfo[18][0] = "Watering Can 1";
             itemInfo[18][1] = "37";
@@ -321,7 +321,7 @@ public class Game extends JPanel implements
             );
             itemInfo[18][3] = "-1";
             itemInfo[18][4] = "-1";
-            itemInfo[18][5] = "2000";
+            itemInfo[18][5] = "1000";
         } else if (num == 19) {
             itemInfo[19][0] = "Watering Can 2";
             itemInfo[19][1] = "38";
@@ -331,7 +331,7 @@ public class Game extends JPanel implements
             );
             itemInfo[19][3] = "-1";
             itemInfo[19][4] = "-1";
-            itemInfo[19][5] = "10000";
+            itemInfo[19][5] = "5000";
         } else if (num == 20) {
             itemInfo[20][0] = "Watering Can 3";
             itemInfo[20][1] = "39";
@@ -341,7 +341,7 @@ public class Game extends JPanel implements
             );
             itemInfo[20][3] = "-1";
             itemInfo[20][4] = "-1";
-            itemInfo[20][5] = "30000";
+            itemInfo[20][5] = "20000";
         }
         return itemInfo[num];
     }
@@ -1156,6 +1156,7 @@ public class Game extends JPanel implements
             if (generalFile.length() == 0) {
                 PrintWriter out = new PrintWriter(new FileWriter("data/general.txt"));
                 out.print("100");
+                money = 100;
                 out.close();
             } else {
                 int[] generalArray = loadMap(generalFile)[0];
