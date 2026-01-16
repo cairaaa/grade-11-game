@@ -20,20 +20,27 @@ public class Game extends JPanel implements
 
     // global variables
     Thread thread;
-    static boolean initialized;
+    boolean initialized;
     static boolean wait;
 
+    // general
+    Font font;
+    int money;
+
     // map/image related
-    static int[][] map;
-    static int[][] objectsMap;
-    static int[][] wetTilesMap;
+    int[][] map;
+    int[][] objectsMap;
+    int[][] wetTilesMap;
+
+    int[][] houseTiles;
+    int[][] houseObjects;
     
-    static BufferedImage[][] tileImages = new BufferedImage[4][16];
-    static BufferedImage[][] objectImages = new BufferedImage[4][16];
-    static BufferedImage[][] itemImages = new BufferedImage[3][16];
-    static BufferedImage[] playerImages;
-    static BufferedImage[] uiImages;
-    static BufferedImage[] stateImages;
+    BufferedImage[][] tileImages = new BufferedImage[5][16];
+    BufferedImage[][] objectImages = new BufferedImage[5][16];
+    BufferedImage[][] itemImages = new BufferedImage[3][16];
+    BufferedImage[] playerImages;
+    BufferedImage[] uiImages;
+    BufferedImage[] stateImages;
 
     Image offScreenImage;
     Graphics offScreenBuffer;
@@ -62,15 +69,12 @@ public class Game extends JPanel implements
     
     // inventory related
     int hotbarSlot = 0;
-    static int[] hotbar = new int[9];
-    static int[][] inventory = new int[3][9];
+    int[] hotbar = new int[9];
+    int[][] inventory = new int[3][9];
 
     // store related
     int storeSelected = -1;
-    static int[][] storeItems = new int[6][6];
-
-    // other
-    Font font;
+    int[][] storeItems = new int[6][6];
 
     // remove later
     JLabel cameraLocation;
@@ -97,12 +101,11 @@ public class Game extends JPanel implements
         // remove this later
         cameraLocation = new JLabel("camera: " + cameraX + " " + cameraY);
         cameraLocation.setFont(font);
-        // setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        // add(cameraLocation);
+        add(cameraLocation);
         
         playerLocation = new JLabel("player: " + playerTileX + " " + playerTileY);
         playerLocation.setFont(font);
-        // add(playerLocation);
+        add(playerLocation);
 
         thread = new Thread(this);
 		thread.start();
@@ -117,6 +120,19 @@ public class Game extends JPanel implements
     public int[] getItemInfo(int num) {
         int[] array = {num / 100, num % 100};
         return array;
+    }
+
+    public int[] getStoreItem(int num) {
+        int[] array = {num / 6, num % 6};
+        return array;
+    }
+
+    public int[] getImageDim(Image image) {
+        int[] imageDimensions = {
+            (int) Math.floor(image.getWidth(this)), 
+            (int) Math.floor(image.getHeight(this))
+        };
+        return imageDimensions;
     }
 
     public int[] getImageDim(Image image, double scalar) {
@@ -143,124 +159,189 @@ public class Game extends JPanel implements
         System.out.println();
     }
 
-    public String[][] getStoreItemInfo(int num) {
-        String[][] itemInfo = new String[20][5];
+    public String[] getStoreItemInfo(int num) {
+        String[][] itemInfo = new String[21][6];
         if (num == 0) {
             itemInfo[0][0] = "Wheat Seed";
-            itemInfo[0][1] = "The starting crop";
-            itemInfo[0][2] = "2";
-            itemInfo[0][3] = "100";
-            itemInfo[0][4] = "50";
+            itemInfo[0][1] = "16";
+            itemInfo[0][2] = "The starting crop";
+            itemInfo[0][3] = "2";
+            itemInfo[0][4] = "100";
+            itemInfo[0][5] = "50";
         } else if (num == 1) {
             itemInfo[1][0] = "Carrot Seed";
-            itemInfo[1][1] = "A simple plant";
-            itemInfo[1][2] = "2";
-            itemInfo[1][3] = "175";
-            itemInfo[1][4] = "100";
+            itemInfo[1][1] = "17";
+            itemInfo[1][2] = "A simple plant";
+            itemInfo[1][3] = "2";
+            itemInfo[1][4] = "175";
+            itemInfo[1][5] = "100";
         } else if (num == 2) {
             itemInfo[2][0] = "Celery Seed";
-            itemInfo[2][1] = "";
-            itemInfo[2][2] = "2-3";
-            itemInfo[2][3] = "300";
-            itemInfo[2][4] = "200";
+            itemInfo[2][1] = "18";
+            itemInfo[2][2] = (
+                "There is a 75% chance it \n" + 
+                "grows in 2 days, and 25% \n" +  
+                "chance it grows in 3 days"
+            );
+            itemInfo[2][3] = "2-3";
+            itemInfo[2][4] = "300";
+            itemInfo[2][5] = "200";
         } else if (num == 3) {
             itemInfo[3][0] = "Lettuce Seed";
-            itemInfo[3][1] = "";
-            itemInfo[3][2] = "2-3";
-            itemInfo[3][3] = "700";
-            itemInfo[3][4] = "500";
+            itemInfo[3][1] = "19";
+            itemInfo[3][2] = (
+                "There is a 50% chance it \n" +
+                "grows in 2 days, and 50% \n" +
+                "chance it grows in 3 days"
+            );
+            itemInfo[3][3] = "2-3";
+            itemInfo[3][4] = "700";
+            itemInfo[3][5] = "500";
         } else if (num == 4) {
             itemInfo[4][0] = "Pea Seed";
-            itemInfo[4][1] = "";
-            itemInfo[4][2] = "3";
-            itemInfo[4][3] = "1500";
-            itemInfo[4][4] = "1000";
+            itemInfo[4][1] = "20";
+            itemInfo[4][2] = (
+                "A consistent crop that\n" +
+                "grows in 3 days"
+            );
+            itemInfo[4][3] = "3";
+            itemInfo[4][4] = "1500";
+            itemInfo[4][5] = "1000";
         } else if (num == 5) {
             itemInfo[5][0] = "Onion Seed";
-            itemInfo[5][1] = "(talk about how it varies between days a lot)";
-            itemInfo[5][2] = "2-4";
-            itemInfo[5][3] = "3000";
-            itemInfo[5][4] = "2000";
+            itemInfo[5][1] = "21";
+            itemInfo[5][2] = (
+                "There is only a 80% chance \n" + 
+                "that you actually get the \n" +
+                "crop"
+            );
+            itemInfo[5][3] = "2-4";
+            itemInfo[5][4] = "3000";
+            itemInfo[5][5] = "2000";
         } else if (num == 6) {
             itemInfo[6][0] = "Radish Seed";
-            itemInfo[6][1] = "";
-            itemInfo[6][2] = "3";
-            itemInfo[6][3] = "3000";
-            itemInfo[6][4] = "2200";
+            itemInfo[6][1] = "22";
+            itemInfo[6][2] = (
+                "There is a wide variance of\n" +
+                "days it takes to grow"
+            );
+            itemInfo[6][3] = "2-4";
+            itemInfo[6][4] = "3000";
+            itemInfo[6][5] = "2200";
         } else if (num == 7) {
             itemInfo[7][0] = "Potato Seed";
-            itemInfo[7][1] = "";
-            itemInfo[7][2] = "4";
-            itemInfo[7][3] = "5000";
-            itemInfo[7][4] = "3500";
+            itemInfo[7][1] = "23";
+            itemInfo[7][2] = (
+                "A consistent crop that\n" +
+                "grows in 4 days"
+            );
+            itemInfo[7][3] = "4";
+            itemInfo[7][4] = "5000";
+            itemInfo[7][5] = "3500";
         } else if (num == 8) {
             itemInfo[8][0] = "Corn Seed";
-            itemInfo[8][1] = "";
-            itemInfo[8][2] = "2";
-            itemInfo[8][3] = "4750";
-            itemInfo[8][4] = "4000";
+            itemInfo[8][1] = "24";
+            itemInfo[8][2] = (
+                "A crop that grows quickly,\n" +
+                "but sells for less"
+            );
+            itemInfo[8][3] = "2";
+            itemInfo[8][4] = "4750";
+            itemInfo[8][5] = "4000";
         } else if (num == 9) {
             itemInfo[9][0] = "Grape Seed";
-            itemInfo[9][1] = (
-                "After they are planted, they will stay and " + 
-                "continue to produce grapes every 3 days"
+            itemInfo[9][1] = "25";
+            itemInfo[9][2] = (
+                "After they are planted,\n" +
+                "they will stay and make\n" + 
+                "grapes every 3 days"
             );
-            itemInfo[9][2] = "3";
-            itemInfo[9][3] = "300";
-            itemInfo[9][4] = "5000";
+            itemInfo[9][3] = "3";
+            itemInfo[9][4] = "300";
+            itemInfo[9][5] = "5000";
         } else if (num == 10) {
             itemInfo[10][0] = "Pumpkin Seed";
-            itemInfo[10][1] = "";
-            itemInfo[10][2] = "5";
-            itemInfo[10][3] = "6000";
-            itemInfo[10][4] = "5000";
+            itemInfo[10][1] = "26";
+            itemInfo[10][2] = (
+                "A consistent crop that\n" +
+                "grows in 5 days"
+            );
+            itemInfo[10][3] = "5";
+            itemInfo[10][4] = "7000";
+            itemInfo[10][5] = "5000";
         } else if (num == 11) {
             itemInfo[11][0] = "Strawberry Seed";
-            itemInfo[11][1] = "";
-            itemInfo[11][2] = "6";
-            itemInfo[11][3] = "12000";
-            itemInfo[11][4] = "10000";
+            itemInfo[11][1] = "27";
+            itemInfo[11][2] = (
+                "A consistent crop that\n" +
+                "grows in 6 days"
+            );
+            itemInfo[11][3] = "6";
+            itemInfo[11][4] = "13500";
+            itemInfo[11][5] = "10000";
         } else if (num == 12) {
             // fix all of this laters
             itemInfo[12][0] = "Hoe Upgrade 1";
-            itemInfo[12][1] = "";
-            itemInfo[12][2] = "-1";
+            itemInfo[12][1] = "34";
+            itemInfo[12][2] = (
+                "Increases the number of\n" +
+                "tiles from 1 to 4"
+            );
             itemInfo[12][3] = "-1";
-            itemInfo[12][4] = "5000";
+            itemInfo[12][4] = "-1";
+            itemInfo[12][5] = "5000";
         } else if (num == 13) {
             itemInfo[13][0] = "Hoe Upgrade 2";
-            itemInfo[13][1] = "";
-            itemInfo[13][2] = "-1";
+            itemInfo[13][1] = "35";
+            itemInfo[13][2] = (
+                "Increases the number of\n" +
+                "tiles from 4 to 9"
+            );
             itemInfo[13][3] = "-1";
-            itemInfo[13][4] = "20000";
+            itemInfo[13][4] = "-1";
+            itemInfo[13][5] = "20000";
         } else if (num == 14) {
             itemInfo[14][0] = "Hoe Upgrade 3";
-            itemInfo[14][1] = "";
-            itemInfo[14][2] = "-1";
+            itemInfo[14][1] = "36";
+            itemInfo[14][2] = (
+                "Increases the number of\n" +
+                "tiles from 9 to 25"
+            );
             itemInfo[14][3] = "-1";
-            itemInfo[14][4] = "50000";
+            itemInfo[14][4] = "-1";
+            itemInfo[14][5] = "50000";
         } else if (num == 18) {
             itemInfo[18][0] = "Watering Can 1";
-            itemInfo[18][1] = (
-                "This upgrade increases the amount of tiles able to be watered"
+            itemInfo[18][1] = "37";
+            itemInfo[18][2] = (
+                "Increases the number of\n" +
+                "tiles from 1 to 4"
             );
-            itemInfo[18][2] = "-1";
             itemInfo[18][3] = "-1";
-            itemInfo[18][4] = "2000";
+            itemInfo[18][4] = "-1";
+            itemInfo[18][5] = "2000";
         } else if (num == 19) {
             itemInfo[19][0] = "Watering Can 2";
-            itemInfo[19][1] = "";
-            itemInfo[19][2] = "-1";
+            itemInfo[19][1] = "38";
+            itemInfo[19][2] = (
+                "Increases the number of\n" +
+                "tiles from 4 to 9"
+            );
             itemInfo[19][3] = "-1";
-            itemInfo[19][4] = "10000";
+            itemInfo[19][4] = "-1";
+            itemInfo[19][5] = "10000";
         } else if (num == 20) {
             itemInfo[20][0] = "Watering Can 3";
-            itemInfo[20][1] = "";
-            itemInfo[20][2] = "-1";
+            itemInfo[20][1] = "39";
+            itemInfo[20][2] = (
+                "Increases the number of\n" +
+                "tiles from 9 to 25"
+            );
             itemInfo[20][3] = "-1";
-            itemInfo[20][4] = "30000";
+            itemInfo[20][4] = "-1";
+            itemInfo[20][5] = "30000";
         }
-        return itemInfo;
+        return itemInfo[num];
     }
 
     // updating arrays
@@ -464,6 +545,9 @@ public class Game extends JPanel implements
         int[][] unsqeeze = {hotbar};
         drawItems(g, unsqeeze, x, y, scalar);
         g.drawImage(uiImages[3], x[hotbarSlot] - 8, startY - 8, 55, 55, this);
+        g.drawString(
+            String.format("$%,d", money), SCREEN_WIDTH - boardDimensions[0] + 20, 148
+        );
     }
 
     public void drawInventory(Graphics g) {
@@ -503,8 +587,70 @@ public class Game extends JPanel implements
         }
         drawItems(g, storeItems, drawX, drawY, 3);
         if (storeSelected != -1) {
-            // call method here to see what to draw
+            Font fontTitle = font.deriveFont(Font.PLAIN, 24f);
+            g.setFont(fontTitle);
+            int[] storeItemPosition = getStoreItem(storeSelected);
+            if (storeItems[storeItemPosition[0]][storeItemPosition[1]] == -1) {
+                return;
+            }
+            String[] info = getStoreItemInfo(storeSelected);
+            int[] indexInImages = getTileParts(Integer.parseInt(info[1]));
+            int[] textboxDim = getImageDim(uiImages[5]);
+            int stringX = 485;
+            int middleX = 463 + textboxDim[0] / 2 - 32;
             g.drawImage(uiImages[5], 463, 90, this);
+            g.drawString(info[0], stringX, 125);
+            g.drawImage(
+                itemImages[indexInImages[0]][indexInImages[1]], 
+                middleX, 130, 64, 64, this
+            );
+            Font newFont = font.deriveFont(Font.PLAIN, 16f);
+            g.setFont(newFont);
+            String[] description = info[2].split("\n");
+            for (int i = 0; i < description.length; i++) {
+                g.drawString(description[i], stringX, 220 + i * 20);
+            }
+            int newY = 220 + description.length * 20 + 20;
+            if (storeSelected <= 11) {
+                g.drawString(
+                    "Days it takes to grow: " + info[3], stringX, newY
+                );
+                g.drawString("Sell price: " + info[4], stringX, newY + 20);
+            }
+            g.setColor(Color.YELLOW);
+            g.drawString("Cost: $" + info[5], stringX, 350);
+            g.setColor(new Color(242, 236, 208));
+            g.setFont(font);
+        }
+    }
+
+    public void drawHouse(Graphics g) {
+        // tiles
+        for (int row = 0; row < 9; row++) {
+            for (int col = 0; col < 12; col++) {
+                int x = col * TILE_LENGTH;
+                int y = row * TILE_LENGTH;
+                int tile = houseTiles[row][col];
+                int[] tileNumbers = getTileParts(tile);
+                if (tile >= 0) {
+                    Image image = tileImages[tileNumbers[0]][tileNumbers[1]];
+                    g.drawImage(image, x, y, TILE_LENGTH, TILE_LENGTH, this);
+                }
+            }
+        }
+        // objects
+        for (int row = 0; row < 9; row++) {
+            for (int col = 0; col < 12; col++) {
+                int x = col * TILE_LENGTH;
+                int y = row * TILE_LENGTH;
+                int houseObject = houseObjects[row][col];
+                int[] tileNumbers = getTileParts(houseObject);
+                if (houseObject >= 0) {
+                    Image image = objectImages[tileNumbers[0]][tileNumbers[1]];
+                    int[] imageDim = getImageDim(image, 4);
+                    g.drawImage(image, x, y, imageDim[0], imageDim[1], this);
+                }
+            }
         }
     }
 
@@ -604,8 +750,17 @@ public class Game extends JPanel implements
         actionAnimationCounter = 0;
     }
 
+    // state related
+    public void checkState() {
+        if (playerTileX == 31 && playerTileY == 18) {
+            state = "store";
+        } else if (playerTileX == 13 && playerTileY == 16) {
+            state = "house";
+        }
+    }
+
     // initializing the game
-    public static int[][] getDefaultMap() {
+    public int[][] getDefaultMap() {
         // change this later
         int[][] map = {
             {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48},
@@ -670,7 +825,7 @@ public class Game extends JPanel implements
         return map;
     }
 
-    public static int[][] getDefaultObjectMap() {
+    public int[][] getDefaultObjectMap() {
         // probably change this later, too many -1s, 
         // iterate over a list of just objects instead?
         int[][] map = {
@@ -736,25 +891,26 @@ public class Game extends JPanel implements
         return map;
     }
 
-    public static int[][] getDefaultStore() {
+    public int[][] getDefaultStore() {
         // likely change this for progression yk
         int[][] store = {
             {1610, 1710, 1810, 1910, 2010, 2110},
             {2210, 2310, 2410, 2510, 2610, 2710},
-            {3201, -1, -1, -1, -1, -1},
-            {3301, -1, -1, -1, -1, -1},
+            {3401, 3501, 3601, -1, -1, -1},
+            {3701, 3801, 3901, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1}
         };
         return store;
     }
 
-    public static void loadInventory() throws IOException {
+    public void loadInventory() throws IOException {
         Scanner inFile = new Scanner(new File("data/inv.txt"));
         inventory[2] = hotbar;
         if (!inFile.hasNextLine()) {
             hotbar[0] = 3201;
             hotbar[1] = 3301;
+            hotbar[2] = 1610;
             PrintWriter out = new PrintWriter(new FileWriter("data/inv.txt"));
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 9; j++) {
@@ -780,7 +936,7 @@ public class Game extends JPanel implements
         inFile.close();
     }
 
-    public static int[][] loadMap(File mapFile) throws FileNotFoundException {
+    public int[][] loadMap(File mapFile) throws FileNotFoundException {
         Scanner inFile = new Scanner(mapFile);
         int[][] changedMap;
 
@@ -808,7 +964,7 @@ public class Game extends JPanel implements
         return changedMap;
     }
 
-    public static BufferedImage[] loadImages(
+    public BufferedImage[] loadImages(
         File folder, 
         boolean mod
     ) throws IOException {
@@ -924,7 +1080,7 @@ public class Game extends JPanel implements
         g.drawImage(offScreenImage, 0, 0, this);
     }    
 
-    public static boolean initialize() {
+    public boolean initialize() {
         File folder = new File("data/");
         File generalFile = new File("data/general.txt");
         File inventoryFile = new File("data/inv.txt");
@@ -941,7 +1097,11 @@ public class Game extends JPanel implements
         try {
             if (generalFile.length() == 0) {
                 PrintWriter out = new PrintWriter(new FileWriter("data/general.txt"));
+                out.print("100");
                 out.close();
+            } else {
+                int[] generalArray = loadMap(generalFile)[0];
+                money = generalArray[0];
             }
             if (inventoryFile.length() == 0) {
                 PrintWriter out = new PrintWriter(new FileWriter("data/inv.txt"));
@@ -992,6 +1152,31 @@ public class Game extends JPanel implements
                 int[][] loadedStoreItems = loadMap(storeFile);
                 storeItems = loadedStoreItems;
             }
+            int[][] houseMap = {
+                {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+                {-1, 65, 66, 66, 66, 66, 66, 66, 66, 66, 67, -1},
+                {-1, 68, 73, 74, 74, 74, 74, 74, 74, 75, 69, -1},
+                {-1, 68, 76, 77, 77, 77, 77, 77, 77, 78, 69, -1},
+                {-1, 68, 64, 64, 64, 64, 64, 64, 64, 64, 69, -1},
+                {-1, 68, 64, 64, 64, 64, 64, 64, 64, 64, 69, -1},
+                {-1, 68, 64, 64, 64, 64, 64, 64, 64, 64, 69, -1},
+                {-1, 70, 71, 71, 71, 71, 71, 71, 71, 71, 72, -1},
+                {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+            };
+            houseTiles = houseMap;
+            int[][] objectHouseMap = {
+                {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+                {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+                {-1, -1, -1, 64, -1, -1, 65, -1, -1, -1, -1, -1},
+                {-1, -1, -1, -1, -1, -1, -1, -1, -1, 69, -1, -1},
+                {-1, -1, -1, -1, -1, -1, -1, 71, -1, -1, -1, -1},
+                {-1, -1, -1, -1, -1, -1, 70, -1, -1, 68, -1, -1},
+                {-1, -1, 66, -1, -1, -1, -1, 72, -1, -1, -1, -1},
+                {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+                {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+            };
+            houseObjects = objectHouseMap;
+            // can add trophy here if the user has one??
 
             wetTilesMap = new int[map.length][map[0].length];
             loadInventory();
@@ -1000,6 +1185,7 @@ public class Game extends JPanel implements
             tileImages[1] = loadImages(new File("assets/tiles/grass"), true);
             tileImages[2] = loadImages(new File("assets/tiles/misc"), true);
             tileImages[3] = loadImages(new File("assets/tiles/water"), true);
+            tileImages[4] = loadImages(new File("assets/tiles/house"), true);
 
             objectImages[0] = loadImages(new File("assets/objects/extra"), true);
             objectImages[1] = loadImages(new File("assets/objects/structures"), true);
@@ -1007,6 +1193,7 @@ public class Game extends JPanel implements
             objectImages[3] = loadImages(
                 new File("assets/objects/wet-farmland"), true
             );
+            objectImages[4] = loadImages(new File("assets/objects/interior"), true);
 
             itemImages[0] = loadImages(new File("assets/items/crops"), true);
             itemImages[1] = loadImages(new File("assets/items/seeds"), true);
@@ -1018,7 +1205,6 @@ public class Game extends JPanel implements
         } catch (IOException e) {
 
         }
-        System.out.println("e");
         return true;
     }
 
@@ -1051,6 +1237,8 @@ public class Game extends JPanel implements
             drawStore(g);
             cameraLocation.setText("");
             playerLocation.setText("");
+        } else if (state.equals("house")) {
+            drawHouse(g);
         }
     }
 
@@ -1224,9 +1412,7 @@ public class Game extends JPanel implements
                 framesPassed = 0;
                 secondsPassed += 1;
             }
-            if (playerTileX == 31 && playerTileY == 18) {
-                state = "store";
-            }
+            checkState();
 			this.repaint();
 			try {
 				Thread.sleep(1000/FPS);
