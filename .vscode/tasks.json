@@ -4,9 +4,9 @@
     {
       "label": "run game",
       "type": "shell",
-      "command": "./graphics.sh Game.java",
+      "command": "../graphics.sh Game.java",
       "options": {
-          "cwd": "${workspaceFolder}"
+          "cwd": "${workspaceFolder}/src"
       },
       "presentation": {
           "echo": true,

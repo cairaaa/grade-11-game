@@ -24,10 +24,11 @@ fi
 
 "$WIN_JAVAC" "$FILENAME" || exit 1
 
-CLASSNAME="${FILENAME%.java}"
+CLASSNAME="$(basename "${FILENAME%.java}")"
 
-"$WIN_JAVA" -cp "$WINDOWS_DIR" "$CLASSNAME" &
+"$WIN_JAVA" -cp "." "$CLASSNAME" &
 JAVA_PID=$!
+
 
 read
 kill $JAVA_PID 2>/dev/null
