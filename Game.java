@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 
 public class Game extends JPanel implements 
+    ActionListener,
     MouseListener, 
     MouseMotionListener,
     KeyListener, 
@@ -38,6 +39,7 @@ public class Game extends JPanel implements
     BufferedImage[][] tileImages = new BufferedImage[5][16];
     BufferedImage[][] objectImages = new BufferedImage[5][16];
     BufferedImage[][] itemImages = new BufferedImage[3][16];
+    BufferedImage[][] cropImages = new BufferedImage[12][4];
     BufferedImage[] playerImages;
     BufferedImage[] uiImages;
     BufferedImage[] stateImages;
@@ -426,6 +428,55 @@ public class Game extends JPanel implements
         wetTilesMap[row][col] = 1;
     }
 
+    public boolean updateBoughtItem(int col, int row) {
+        int num = storeItems[row][col];
+        int[] info = getItemInfo(num);
+        String[] moreInfo = getStoreItemInfo(storeSelected);
+        int cost = Integer.parseInt(moreInfo[5]);
+        int itemId = info[0];
+        if (info[1] == 0) {
+            return false;
+        }
+        if (money - cost < 0) {
+            return false;
+        }
+        
+        for (int i = 0; i < 3; i++) {
+            int invRow;
+            if (i == 0) {
+                invRow = 2;
+            } else if (i == 1) {
+                invRow = 0;
+            } else {
+                invRow = 1;
+            }
+            for (int invCol = 0; invCol < 9; invCol++) {
+                if (inventory[invRow][invCol] != -1) {
+                    int[] invInfo = getItemInfo(inventory[invRow][invCol]);
+                    if (itemId == invInfo[0] && invInfo[1] < 99) {
+                        inventory[invRow][invCol] = invInfo[0] * 100 + invInfo[1] + 1;
+                        storeItems[row][col]--;
+                        money -= cost;
+                        return true;
+                    }
+                }
+            }
+            for (int invCol = 0; invCol < 9; invCol++) {
+                if (inventory[invRow][invCol] == -1) {
+                    inventory[invRow][invCol] = itemId * 100 + 1;
+                    storeItems[row][col]--;
+                    money -= cost;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public void updateCrop(int col, int row) {
+        // add planting logic here
+    }
+
     // drawing stuff
     public void drawPlayer(Graphics g, int index) {
         int frameToDraw;
@@ -621,6 +672,13 @@ public class Game extends JPanel implements
             g.drawString("Cost: $" + info[5], stringX, 350);
             g.setColor(new Color(242, 236, 208));
             g.setFont(font);
+            int[] buttonImageDim = getImageDim(uiImages[6], 2);
+            g.drawImage(
+                uiImages[6], 463, 395, buttonImageDim[0], buttonImageDim[1], this
+            );
+            g.drawString(
+                "Buy", 463 + buttonImageDim[0] / 2 - 18, 395 + buttonImageDim[1] / 2 + 6
+            );
         }
     }
 
@@ -1177,6 +1235,8 @@ public class Game extends JPanel implements
             };
             houseObjects = objectHouseMap;
             // can add trophy here if the user has one??
+            // add loading for the object crops, 
+            // for loop for folder names and use loadImages?
 
             wetTilesMap = new int[map.length][map[0].length];
             loadInventory();
@@ -1270,26 +1330,32 @@ public class Game extends JPanel implements
                 );
                 return;
             }
+            int item = hotbar[hotbarSlot] / 100;
+
             System.out.println("hotbar slot: " + hotbarSlot);
             System.out.println("metadata value: " + hotbar[hotbarSlot]);
 
-            if (hotbar[hotbarSlot] / 100 == 32) {
+            if (item == 32) {
                 System.out.println("pressed at " + x + ", " + y);
                 System.out.println("pressed tile: " + tileX + ", " + tileY);
                 System.out.println("hoe tool");
                 startActionAnimation("hoeing");
                 updateTile(tileX, tileY);
-            } else if (hotbar[hotbarSlot] / 100 == 33) {
+            } else if (item == 33) {
                 System.out.println("pressed at " + x + ", " + y);
                 System.out.println("pressed tile: " + tileX + ", " + tileY);
                 System.out.println("water bucket");
                 startActionAnimation("watering");
                 updateWateredTile(tileX, tileY);
+            } else if (item >= 16 && item <= 27) {
+                System.out.println("pressed at " + x + ", " + y);
+                System.out.println("pressed tile: " + tileX + ", " + tileY);
+                System.out.println("crop");
+                updateCrop(tileX, tileY);
             }
         } else if (state.equals("inv")) {
             // do stuff, like dragging stuff etc
         } else if (state.equals("store")) {
-            // fix this later
             int scalar = 3;
             for (int i = 0; i < 5; i++) {
                 int clicked = getTileClicked(
@@ -1300,12 +1366,18 @@ public class Game extends JPanel implements
                 );
                 if (clicked != -1) {
                     storeSelected = i * 6 + clicked;
-                    System.out.println(storeSelected);
-                    System.out.println(storeSelected % 6 + " " + storeSelected / 6);
                     break;
-                } else {
-                    System.out.println(i + " i , nothing");
                 }
+            }
+            int[] buttonImageDim = getImageDim(uiImages[6], 2);
+            // 463, 395
+            if (
+                actualX >= 463 && actualX <= 463 + buttonImageDim[0] &&
+                actualY >= 395 && actualY <= 395 + buttonImageDim[1] &&
+                storeSelected != -1
+            ) {
+                int[] info = getStoreItem(storeSelected);
+                System.out.println(updateBoughtItem(info[1], info[0]));
             }
         }
     }
@@ -1374,6 +1446,7 @@ public class Game extends JPanel implements
                 state = "game";
                 cameraY = 960;
                 lastDirection = "down";
+                storeSelected = -1;
             } else if (state.equals("inv")) {
                 state = "game";
             }
@@ -1396,6 +1469,11 @@ public class Game extends JPanel implements
 
     @Override
     public void keyTyped(KeyEvent e) {
+
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
 
     }
 
