@@ -83,7 +83,9 @@ public class Game extends JPanel implements
     int[] hotbar = new int[9];
     int[][] inventory = new int[3][9];
     int invX, invY;
-    int draggedItemSlot;
+    int draggedItemRow = -1;
+    int draggedItemCol = -1;
+    int draggedItem = -1;
 
     // store related
     int storeSelected = -1;
@@ -101,6 +103,7 @@ public class Game extends JPanel implements
         );
 
         addMouseListener(this);
+        addMouseMotionListener(this);
         addKeyListener(this);
         setFocusable(true);
 
@@ -160,6 +163,30 @@ public class Game extends JPanel implements
             (int) Math.floor(image.getHeight(this) * scalar)
         };
         return imageDimensions;
+    }
+
+    public int[][][] getInventorySlotPositions() {
+        Image inventoryImage = uiImages[2];
+        int[] imageDimensions = getImageDim(inventoryImage, 3);
+        int scalar = 3;
+        int startX = SCREEN_WIDTH / 2 - imageDimensions[0] / 2 + 12 * scalar;
+        int startY = SCREEN_HEIGHT / 2 - imageDimensions[1] / 2 + 10 * scalar;
+        
+        int[][][] positions = new int[3][9][2];
+        
+        int[] drawY = new int[3];
+        drawY[0] = startY;
+        drawY[1] = startY + 20 * scalar;
+        drawY[2] = startY + 44 * scalar;
+        
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                positions[row][col][0] = startX + col * 20 * scalar;
+                positions[row][col][1] = drawY[row];
+            }
+        }
+        
+        return positions;
     }
 
     public void printArray(int[] array) {
@@ -578,6 +605,52 @@ public class Game extends JPanel implements
         return array;
     }
 
+    public boolean canStack(int firstItem, int secondItem) {
+        if (firstItem < 0 || secondItem < 0) {
+            return false;
+        }
+        int[] firstInfo = getItemInfo(firstItem);
+        int[] secondInfo = getItemInfo(secondItem);
+        boolean stackable = (
+            firstInfo[0] == secondInfo[0] && 
+            firstInfo[0] < 32 && 
+            firstInfo[1] + secondInfo[1] <= 99
+        );
+        return stackable;
+    }
+
+    public void drawDraggedItem(Graphics g) {
+        int scalar = 3;
+        if (draggedItemRow != -1) {
+            int[] itemNumbers = getItemInfo(draggedItem);
+            int[] otherNumbers = getTileParts(itemNumbers[0]);
+            g.drawImage(
+                itemImages[otherNumbers[0]][otherNumbers[1]], 
+                invX - 8 * scalar, 
+                invY - 8 * scalar, 
+                16 * scalar, 16 * scalar, this
+            );
+            if (itemNumbers[0] < 32) {
+                int[] numberPos = getNumberPos(
+                    invX - 8 * scalar, 
+                    invY - 8 * scalar, 
+                    scalar
+                );
+                if (itemNumbers[1] >= 10) {
+                    g.drawString(
+                        String.valueOf(itemNumbers[1]), 
+                        numberPos[0], numberPos[1]
+                    );
+                } else {
+                    g.drawString(
+                        String.valueOf(itemNumbers[1]), 
+                        numberPos[2], numberPos[1]
+                    );
+                }
+            }
+        }
+    }
+
     public void drawItems(
         Graphics g, 
         int[][] values, 
@@ -664,13 +737,14 @@ public class Game extends JPanel implements
         int[] drawX = new int[9];
         int[] drawY = new int[3];
         int scalar = 3;
-        int startX = SCREEN_WIDTH / 2 - imageDimensions[0] / 2 + 12 * scalar;
-        int startY = SCREEN_HEIGHT / 2 - imageDimensions[1] / 2 + 10 * scalar;
-        drawY[0] = startY;
-        drawY[1] = startY + 20 * scalar;
-        drawY[2] = startY + 44 * scalar;
-        for (int i = 0; i < 9; i++) {
-            drawX[i] = startX + i * 20 * scalar;
+        int[][][] slotPositions = getInventorySlotPositions();
+
+        for (int col = 0; col < 9; col++) {
+            drawX[col] = slotPositions[0][col][0];
+        }
+
+        for (int row = 0; row < 3; row++) {
+            drawY[row] = slotPositions[row][0][1];
         }
         drawItems(g, inventory, drawX, drawY, scalar);
     }
@@ -900,7 +974,7 @@ public class Game extends JPanel implements
                 houseX = 67;
                 houseY = 380;
                 lastDirection = "down";
-            } else if ((playerTileX == 1 || playerTileY == 2) && playerTileY == 2) {
+            } else if ((playerTileX == 1 || playerTileX == 2) && playerTileY == 2) {
                 state = "end";
                 // call function to reset everything
             }
@@ -908,7 +982,7 @@ public class Game extends JPanel implements
     }
 
     public void calculateTime() {
-        if (state.equals("game") || state.equals("house")) {
+        if (state.equals("game") || state.equals("house") || state.equals("inv")) {
             framesPassed += 1;
             if (framesPassed == FPS) {
                 framesPassed = 0;
@@ -1462,6 +1536,7 @@ public class Game extends JPanel implements
             drawUi(g);
             if (state.equals("inv")) {
                 drawInventory(g);
+                drawDraggedItem(g);
             }
             cameraLocation.setText("camera: " + cameraX + " " + cameraY);
             playerLocation.setText("player: " + playerTileX + " " + playerTileY);
@@ -1530,7 +1605,28 @@ public class Game extends JPanel implements
                 updateCrop(tileX, tileY);
             }
         } else if (state.equals("inv")) {
-            // do stuff, like dragging stuff etc
+            int scalar = 3;
+            int[][][] slotPositions = getInventorySlotPositions();
+            for (int row = 0; row < 3; row++) {
+                for (int col = 0; col < 9; col++) {
+                    int slotX = slotPositions[row][col][0];
+                    int slotY = slotPositions[row][col][1];
+                    if (
+                        actualX >= slotX && actualX < slotX + 16 * scalar &&
+                        actualY >= slotY && actualY < slotY + 16 * scalar
+                    ) {
+                        if (inventory[row][col] >= 0) {
+                            draggedItemRow = row;
+                            draggedItemCol = col;
+                            draggedItem = inventory[row][col];
+                            inventory[row][col] = -2;
+                            invX = actualX;
+                            invY = actualY;
+                        }
+                        return;
+                    }
+                }
+            }
         } else if (state.equals("store")) {
             int scalar = 3;
             for (int i = 0; i < 5; i++) {
@@ -1560,7 +1656,64 @@ public class Game extends JPanel implements
 
     @Override
     public void mouseReleased(MouseEvent e) {
+        if (state.equals("inv") && draggedItemRow != -1) {
+            int actualX = e.getX();
+            int actualY = e.getY();
+            int[][][] slotPositions = getInventorySlotPositions();
+            int scalar = 3;
 
+            int targetRow = -1;
+            int targetCol = -1;
+            
+            for (int row = 0; row < 3; row++) {
+                for (int col = 0; col < 9; col++) {
+                    int slotX = slotPositions[row][col][0];
+                    int slotY = slotPositions[row][col][1];
+                    
+                    if (actualX >= slotX && actualX < slotX + 16 * scalar &&
+                        actualY >= slotY && actualY < slotY + 16 * scalar) {
+                        targetRow = row;
+                        targetCol = col;
+                        break;
+                    }
+                }
+                if (targetRow != -1) {
+                    break;
+                }
+            }
+            System.out.println("Dragged from: " + draggedItemRow + ", " + draggedItemCol);
+            System.out.println("Target: " + targetRow + ", " + targetCol);
+
+            if (targetRow == draggedItemRow && targetCol == draggedItemCol) {
+                inventory[draggedItemRow][draggedItemCol] = draggedItem;
+            } else if (targetRow != -1 && targetCol != -1) {
+                int targetItem = inventory[targetRow][targetCol];
+                if (targetItem >= 0 && canStack(draggedItem, targetItem)) {
+                    int[] firstInfo = getItemInfo(draggedItem);
+                    int[] secondInfo = getItemInfo(targetItem);
+                    
+                    int itemType = firstInfo[0];
+                    int totalQuantity = firstInfo[1] + secondInfo[1];
+                    inventory[targetRow][targetCol] = itemType * 100 + totalQuantity;
+                    inventory[draggedItemRow][draggedItemCol] = -1;
+                } else {
+                    inventory[targetRow][targetCol] = draggedItem;
+                    
+                    if (targetItem >= 0) {
+                        inventory[draggedItemRow][draggedItemCol] = targetItem;
+                    } else {
+                        inventory[draggedItemRow][draggedItemCol] = -1;
+                        draggedItemCol = -1;
+                        draggedItem = -1;
+                    }
+                }
+            } else {
+                inventory[draggedItemRow][draggedItemCol] = draggedItem;
+            }
+            draggedItemRow = -1;
+            draggedItemCol = -1;
+            draggedItem = -1;
+        }
     }
 
     @Override
@@ -1580,7 +1733,7 @@ public class Game extends JPanel implements
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        if (state.equals("inv") && draggedItemSlot != -1) {
+        if (state.equals("inv") && draggedItemRow != -1) {
             invX = e.getX();
             invY = e.getY();
         }
