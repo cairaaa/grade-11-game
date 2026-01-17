@@ -27,6 +27,8 @@ public class Game extends JPanel implements
     // general
     Font font;
     int money;
+    int earned;
+    int days;
 
     // map/image related
     int[][] map;
@@ -50,10 +52,13 @@ public class Game extends JPanel implements
     // movement
     boolean up, down, left, right;
     int speed = 10;
-    int cameraX = 500;
-    int cameraY = 850;
+    int cameraX = 480;
+    int cameraY = 840;
     int playerTileX, playerTileY;
     String lastDirection = "down";
+
+    int houseX = 67;
+    int houseY = 380;
 
     // animation
     int movementAnimationFrame = 0;
@@ -67,12 +72,18 @@ public class Game extends JPanel implements
     // game state
     int framesPassed = 0;
     int secondsPassed = 0;
+    int totalMinutes;
+    int hours;
+    int minutes;
+    int increment = 30;
     String state = "game";
     
     // inventory related
     int hotbarSlot = 0;
     int[] hotbar = new int[9];
     int[][] inventory = new int[3][9];
+    int invX, invY;
+    int draggedItemSlot;
 
     // store related
     int storeSelected = -1;
@@ -501,10 +512,15 @@ public class Game extends JPanel implements
         }
         int item = getItemInfo(hotbar[hotbarSlot])[0];
         objectsMap[row - 1][col] = item * 100;
+        if (hotbar[hotbarSlot] % 100 <= 1) {
+            hotbar[hotbarSlot] = -1;
+            return;
+        }
+        hotbar[hotbarSlot] -= 1;
     }
 
     // drawing stuff
-    public void drawPlayer(Graphics g, int index) {
+    public void drawPlayer(Graphics g, int index, boolean isGame) {
         int frameToDraw;
   
         if (isPlayingActionAnimation) {
@@ -519,11 +535,10 @@ public class Game extends JPanel implements
                 startIndex = index + 18;
             }
             frameToDraw = startIndex + actionAnimationFrame;
-            g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
-            return;
-        }
-
-        if (up || down || left || right) {
+            if (isGame) {
+                g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
+            }
+        } else if (up || down || left || right) {
             int startIndex;
             if (right) {
                 startIndex = index + 6;
@@ -546,7 +561,11 @@ public class Game extends JPanel implements
                 frameToDraw = 3;
             }
         }
-        g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
+        if (isGame) {
+            g.drawImage(playerImages[frameToDraw], 288, 192, 192, 192, this);
+        } else {
+            g.drawImage(playerImages[frameToDraw], houseX, houseY, 192, 192, this);
+        }
     }
 
     public int[] getNumberPos(int x, int y, double scalar) {
@@ -619,12 +638,19 @@ public class Game extends JPanel implements
         for (int i = 0; i < 9; i++) {
             x[i] = (int) Math.floor(startX + i * 20 * scalar);
         }
-        int[][] unsqeeze = {hotbar};
-        drawItems(g, unsqeeze, x, y, scalar);
+        int[][] unsqueeze = {hotbar};
+        drawItems(g, unsqueeze, x, y, scalar);
         g.drawImage(uiImages[3], x[hotbarSlot] - 8, startY - 8, 55, 55, this);
-        g.drawString(
-            String.format("$%,d", money), SCREEN_WIDTH - boardDimensions[0] + 20, 148
-        );
+        int stringX = SCREEN_WIDTH - boardDimensions[0] + 20;
+        int month = days / 30 + 1;
+        int day = days % 30 + 1;
+        int displayMinutes = (minutes / 30) * 30;
+        Font newFont = font.deriveFont(Font.PLAIN, 16f);
+        g.setFont(newFont);
+        g.drawString("Month " + month + " Day " + day, stringX, 73);
+        g.drawString(String.format("%02d:%02d", hours, displayMinutes), stringX, 110);
+        g.drawString(String.format("$%,d", money), stringX, 147);
+        g.setFont(font);
     }
 
     public void drawInventory(Graphics g) {
@@ -675,6 +701,10 @@ public class Game extends JPanel implements
             int[] textboxDim = getImageDim(uiImages[5]);
             int stringX = 485;
             int middleX = 463 + textboxDim[0] / 2 - 32;
+            g.drawImage(
+                uiImages[3], drawX[storeItemPosition[1]] - 3 * scalar, 
+                drawY[storeItemPosition[0]] - 3 * scalar, 66, 66, this
+            );
             g.drawImage(uiImages[5], 463, 90, this);
             g.drawString(info[0], stringX, 125);
             g.drawImage(
@@ -796,6 +826,27 @@ public class Game extends JPanel implements
         }
 	}
 
+    public void moveStationaryCamera() {
+        if (left) {
+            houseX -= speed;
+            lastDirection = "left";
+        } else if (right) {
+            houseX += speed;
+            lastDirection = "right";
+        }
+
+        if (up) {
+            houseY -= speed;
+            lastDirection = "up";
+        } else if (down) {
+            houseY += speed;
+            lastDirection = "down";
+        }
+
+        playerTileX = houseX / TILE_LENGTH;
+        playerTileY = houseY / TILE_LENGTH;
+    }
+
     // animation
     public void animatePlayer() {
         if (up || down || left || right) {
@@ -840,6 +891,73 @@ public class Game extends JPanel implements
             state = "store";
         } else if (playerTileX == 13 && playerTileY == 16) {
             state = "house";
+            lastDirection = "up";
+        } else if (state.equals("house")) {
+            if (playerTileX == 1 && playerTileY == 6) {
+                state = "game";
+                cameraX = 480;
+                cameraY = 840;
+                houseX = 67;
+                houseY = 380;
+                lastDirection = "down";
+            } else if ((playerTileX == 1 || playerTileY == 2) && playerTileY == 2) {
+                state = "end";
+                // call function to reset everything
+            }
+        }
+    }
+
+    public void calculateTime() {
+        if (state.equals("game") || state.equals("house")) {
+            framesPassed += 1;
+            if (framesPassed == FPS) {
+                framesPassed = 0;
+                secondsPassed += 1;
+                if (secondsPassed >= 17 * 20) {
+                    // calculate smth as the day is over
+                    secondsPassed = 0;
+                }
+                totalMinutes = 7 * 60 + secondsPassed * 3;
+
+                hours = totalMinutes / 60 % 24;
+                minutes = totalMinutes % 60;
+            }
+        }
+    }
+
+    // use a different function to save to files or no idk???
+    public void resetDay() {
+        money += earned;
+        // reset earned after showing it, maybe call this when right before
+        // the user leaves the end screen?
+        // earned = 0;
+        days += 1;
+        up = false;
+        down = false;
+        left = false;
+        right = false;
+        lastDirection = "down";
+        // change houseX to find the best spot
+        houseX = 300;
+        houseY = 380;
+        movementAnimationFrame = 0;
+        movementAnimationCounter = 0;
+        actionAnimationFrame = 0;
+        actionAnimationCounter = 0;
+        isPlayingActionAnimation = false;
+        currentAction = "";
+        framesPassed = 0;
+        secondsPassed = 0;
+        totalMinutes = 0;
+        hours = 0;
+        minutes = 0;
+        hotbarSlot = 0;
+        // load shop, reset all seeds but not the tools, only check rows 0 and 1?
+        // make all the crops grow
+        for (int i = 0; i < wetTilesMap.length; i++) {
+            for (int j = 0; j < wetTilesMap[0].length; j++) {
+                wetTilesMap[i][j] = -1;
+            }
         }
     }
 
@@ -976,7 +1094,6 @@ public class Game extends JPanel implements
     }
 
     public int[][] getDefaultStore() {
-        // likely change this for progression yk
         int[][] store = {
             {1610, 1710, 1810, 1910, 2010, 2110},
             {2210, 2310, 2410, 2510, 2610, 2710},
@@ -1152,15 +1269,22 @@ public class Game extends JPanel implements
                         )
                     ) {
                         if (objectTile > 100) {
-                            // this means that it is a crop
+                            int[] cropInfo = getItemInfo(objectTile);
+                            image = cropImages[cropInfo[0] - 16][cropInfo[1]];
+                            scaledWidth = image.getWidth(this) * 4;
+                            scaledHeight = image.getHeight(this) * 4;
+                            offScreenBuffer.drawImage(
+                                image, x, y, scaledWidth, scaledHeight, this
+                            );
+                        } else {
+                            objectNumbers = getTileParts(objectTile);
+                            image = objectImages[objectNumbers[0]][objectNumbers[1]];
+                            scaledWidth = image.getWidth(this) * 4;
+                            scaledHeight = image.getHeight(this) * 4;
+                            offScreenBuffer.drawImage(
+                                image, x, y, scaledWidth, scaledHeight, this
+                            );
                         }
-                        objectNumbers = getTileParts(objectTile);
-                        image = objectImages[objectNumbers[0]][objectNumbers[1]];
-                        scaledWidth = image.getWidth(this) * 4;
-                        scaledHeight = image.getHeight(this) * 4;
-                        offScreenBuffer.drawImage(
-                            image, x, y, scaledWidth, scaledHeight, this
-                        );
                     }
                 }
             }
@@ -1185,12 +1309,14 @@ public class Game extends JPanel implements
         try {
             if (generalFile.length() == 0) {
                 PrintWriter out = new PrintWriter(new FileWriter("data/general.txt"));
-                out.print("100");
+                out.print("100 1");
                 money = 100;
+                days = 1;
                 out.close();
             } else {
                 int[] generalArray = loadMap(generalFile)[0];
                 money = generalArray[0];
+                days = generalArray[1];
             }
             if (inventoryFile.length() == 0) {
                 PrintWriter out = new PrintWriter(new FileWriter("data/inv.txt"));
@@ -1249,18 +1375,18 @@ public class Game extends JPanel implements
                 {-1, 68, 64, 64, 64, 64, 64, 64, 64, 64, 69, -1},
                 {-1, 68, 64, 64, 64, 64, 64, 64, 64, 64, 69, -1},
                 {-1, 68, 64, 64, 64, 64, 64, 64, 64, 64, 69, -1},
-                {-1, 70, 71, 71, 71, 71, 71, 71, 71, 71, 72, -1},
+                {-1, 68, 64, 79, 71, 71, 71, 71, 71, 71, 72, -1},
                 {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
             };
             houseTiles = houseMap;
             int[][] objectHouseMap = {
                 {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
                 {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-                {-1, -1, -1, 64, -1, -1, 65, -1, -1, -1, -1, -1},
+                {-1, -1, -1, -1, 65, -1, -1, -1, -1, -1, -1, -1},
                 {-1, -1, -1, -1, -1, -1, -1, -1, -1, 69, -1, -1},
-                {-1, -1, -1, -1, -1, -1, -1, 71, -1, -1, -1, -1},
+                {-1, -1, 66, -1, -1, -1, -1, 71, -1, -1, -1, -1},
                 {-1, -1, -1, -1, -1, -1, 70, -1, -1, 68, -1, -1},
-                {-1, -1, 66, -1, -1, -1, -1, 72, -1, -1, -1, -1},
+                {-1, -1, -1, -1, -1, -1, -1, 72, -1, -1, -1, -1},
                 {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
                 {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
             };
@@ -1326,12 +1452,12 @@ public class Game extends JPanel implements
             drawMap(g);
             if (isPlayingActionAnimation) {
                 if (currentAction.equals("hoeing")) {
-                    drawPlayer(g, 28);
+                    drawPlayer(g, 28, true);
                 } else {
-                    drawPlayer(g, 52);
+                    drawPlayer(g, 52, true);
                 }
             } else {
-                drawPlayer(g, 4);
+                drawPlayer(g, 4, true);
             }
             drawUi(g);
             if (state.equals("inv")) {
@@ -1345,6 +1471,11 @@ public class Game extends JPanel implements
             playerLocation.setText("");
         } else if (state.equals("house")) {
             drawHouse(g);
+            drawPlayer(g, 4, false);
+            cameraLocation.setText("camera: " + cameraX + " " + cameraY);
+            playerLocation.setText("player: " + playerTileX + " " + playerTileY);
+        } else if (state.equals("end")) {
+            // add stuff
         }
     }
 
@@ -1363,7 +1494,6 @@ public class Game extends JPanel implements
                 actualX > 159 && actualX < 159 + 455 && 
                 actualY > 523 && actualY < SCREEN_HEIGHT
             ) {
-                // change this to actual hotbar slot later
                 int checkHotbarSlot = getTileClicked(
                     actualX, actualY, 159 + 3, 521 + 3, 9, 2.5
                 );
@@ -1450,7 +1580,10 @@ public class Game extends JPanel implements
 
     @Override
     public void mouseDragged(MouseEvent e) {
-
+        if (state.equals("inv") && draggedItemSlot != -1) {
+            invX = e.getX();
+            invY = e.getY();
+        }
     }
 
     @Override
@@ -1463,7 +1596,7 @@ public class Game extends JPanel implements
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
         // continue to add other states where this shouldnt apply to and stuff
-        if (state.equals("game")) {
+        if (state.equals("game") || state.equals("house")) {
             if (key == KeyEvent.VK_A) {
                 left = true;
                 right = false;
@@ -1476,7 +1609,7 @@ public class Game extends JPanel implements
             } else if (key == KeyEvent.VK_S) {
                 down = true;
                 up = false;
-            } else if (key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9){
+            } else if (key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9) {
                 hotbarSlot = Integer.parseInt(KeyEvent.getKeyText(key)) - 1;
             }
         }
@@ -1529,18 +1662,18 @@ public class Game extends JPanel implements
         wait = false;
 		while (true) {
 			// main game loop
-            move();
-            animatePlayer();
-            framesPassed += 1;
-            if (framesPassed == FPS) {
-                framesPassed = 0;
-                secondsPassed += 1;
+            if (state.equals("game")) {
+                move();
+            } else if (state.equals("house")) {
+                moveStationaryCamera();
             }
+            animatePlayer();
+            calculateTime();
             checkState();
 			this.repaint();
 			try {
 				Thread.sleep(1000/FPS);
-			} catch(Exception e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
