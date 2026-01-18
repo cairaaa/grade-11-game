@@ -37,6 +37,8 @@ public class Game extends JPanel implements
 
     int[][] houseTiles;
     int[][] houseObjects;
+
+    int[][] cropDaysMap;
     
     BufferedImage[][] tileImages = new BufferedImage[5][16];
     BufferedImage[][] objectImages = new BufferedImage[5][16];
@@ -142,12 +144,6 @@ public class Game extends JPanel implements
 
     public int[] getStoreItem(int num) {
         int[] array = {num / 6, num % 6};
-        return array;
-    }
-
-    public int[] getCropInfo(int num) {
-        // make this for in the objects array, since the numbers have to be different
-        int[] array = {};
         return array;
     }
 
@@ -271,7 +267,7 @@ public class Game extends JPanel implements
                 "that you actually get the \n" +
                 "crop"
             );
-            itemInfo[5][3] = "2-4";
+            itemInfo[5][3] = "3";
             itemInfo[5][4] = "300";
             itemInfo[5][5] = "200";
         } else if (num == 6) {
@@ -329,11 +325,11 @@ public class Game extends JPanel implements
             itemInfo[11][0] = "Strawberry Seed";
             itemInfo[11][1] = "27";
             itemInfo[11][2] = (
-                "A consistent crop that\n" +
-                "grows in 6 days"
+                "Drops 1-4 strawberries\n" +
+                "when you pick it up"
             );
             itemInfo[11][3] = "6";
-            itemInfo[11][4] = "3000";
+            itemInfo[11][4] = "1500";
             itemInfo[11][5] = "2500";
         } else if (num == 12) {
             // fix all of this laters
@@ -398,6 +394,17 @@ public class Game extends JPanel implements
             itemInfo[20][5] = "20000";
         }
         return itemInfo[num];
+    }
+
+    public int[] getItemSellPrices() {
+        int[] array = new int[28];
+        for (int i = 0; i < 12; i++) {
+            int sellPrice = Integer.parseInt(getStoreItemInfo(i)[4]);
+            int sellPriceSeed = (int) (Integer.parseInt(getStoreItemInfo(i)[5]) * 0.5);
+            array[i] = sellPrice;
+            array[i + 16] = sellPriceSeed;
+        }
+        return array;
     }
 
     // updating arrays
@@ -494,53 +501,19 @@ public class Game extends JPanel implements
         if (money - cost < 0) {
             return false;
         }
-        
-        for (int i = 0; i < 3; i++) {
-            int invRow;
-            if (i == 0) {
-                invRow = 2;
-            } else if (i == 1) {
-                invRow = 0;
-            } else {
-                invRow = 1;
-            }
-            for (int invCol = 0; invCol < 9; invCol++) {
-                if (inventory[invRow][invCol] != -1) {
-                    int[] invInfo = getItemInfo(inventory[invRow][invCol]);
-                    if (itemId == invInfo[0] && invInfo[1] < 99) {
-                        inventory[invRow][invCol] = invInfo[0] * 100 + invInfo[1] + 1;
-                        storeItems[row][col]--;
-                        money -= cost;
-                        return true;
-                    }
-                }
-            }
-            for (int invCol = 0; invCol < 9; invCol++) {
-                if (inventory[invRow][invCol] == -1) {
-                    inventory[invRow][invCol] = itemId * 100 + 1;
-                    storeItems[row][col]--;
-                    money -= cost;
-                    return true;
-                }
-            }
+        int[] rowOrder = {2, 0, 1};
+        int[] coordinates = calculateNextSlot(inventory, itemId * 100 + 1, rowOrder);
+        printArray(coordinates);
+        if (coordinates[0] == -1 || coordinates[1] == -1) {
+            return false;
         }
-        return false;
+        storeItems[row][col]--;
+        money -= cost;
+
+        return true;
     }
 
-    // move this later
-    public int[] getCropType(int row, int col) {
-        if (row > 0) {
-            int num = objectsMap[row - 1][col];
-            if (num >= 100) {
-                int[] array = getItemInfo(num);
-                return array;
-            }
-        }
-        int[] array = {-1, -1};
-        return array;
-    }
-
-    public void updateCrop(int col, int row) {
+    public void updateCropPlaced(int col, int row) {
         if (!isFarmland(map[row][col])) {
             return;
         }
@@ -549,11 +522,113 @@ public class Game extends JPanel implements
         }
         int item = getItemInfo(hotbar[hotbarSlot])[0];
         objectsMap[row - 1][col] = item * 100;
+        cropDaysMap[row][col] = 0;
+        System.out.println(
+            "updated crops row " + row + " col " + col + " to " + cropDaysMap[row][col]
+        );
         if (hotbar[hotbarSlot] % 100 <= 1) {
             hotbar[hotbarSlot] = -1;
             return;
         }
         hotbar[hotbarSlot] -= 1;
+    }
+
+    public void updateCropGrowth() {
+        // keep track of the mechanisms each plant has
+        for (int row = 0; row < wetTilesMap.length; row++) {
+            for (int col = 0; col < wetTilesMap[0].length; col++) {
+                if (wetTilesMap[row][col] < 0) {
+                    continue;
+                }
+                if (
+                    wetTilesMap[row][col] >= 0 && 
+                    row > 0 && objectsMap[row - 1][col] == -1
+                ) {
+                    continue;
+                }
+                int num = objectsMap[row - 1][col];
+                int[] cropInfo = getItemInfo(num);
+                int cropType = cropInfo[0];
+                int day = cropDaysMap[row][col];
+                System.out.println(num + " " + cropType);
+                String[] possibleDays = getStoreItemInfo(cropType - 16)[3].split("-");
+                int maxDays = Integer.parseInt(possibleDays[possibleDays.length - 1]);
+                if (day >= maxDays) {
+                    continue;
+                }
+                double random = Math.random();
+                if (cropType == 18) {
+                    // 75% chance 2 days 25% chance 3 days
+                    if (day == 0) {
+                        if (random < 0.75) {
+                            day = 2;
+                        } else {
+                            day = 1;
+                        }
+                    } else {
+                        day += 1;
+                    }
+                } else if (cropType == 19) {
+                    // 50% chance 2 days 50% chance 3 days
+                    if (day == 0) {
+                        if (random < 0.5) {
+                            day = 2;
+                        } else {
+                            day = 1;
+                        }
+                    } else {
+                        day += 1;
+                    }
+                } else if (cropType == 22) {
+                    if (day == maxDays - 1) {
+                        day += 1;
+                    } else if (random > 0.5) {
+                        day += 2;
+                    } else {
+                        day += 1;
+                    }
+                } else {
+                    day += 1;
+                }
+                int stage;
+                if (day >= maxDays) {
+                    stage = 3;
+                } else {
+                    stage = (int) Math.floor((double) day / maxDays * 3);
+                }
+                System.out.println(
+                    cropType + " " + day + " " + row + " " + col + " " + stage + " " + maxDays
+                );
+                objectsMap[row - 1][col] = cropType * 100 + stage;
+                cropDaysMap[row][col] = day;
+            }
+        }
+    }
+
+    public void updateCropHarvest(int col, int row) {
+        int realRow = row - 1;
+        if (realRow < 0) {
+            return;
+        }
+        int[] cropInfo = getItemInfo(objectsMap[realRow][col]);
+        int amount;
+        if (cropInfo[0] == 21) {
+            double random = Math.random();
+            if (random < 0.2) {
+                amount = 0;
+            } else {
+                amount = 1;
+            }
+        } else if (cropInfo[0] == 27) {
+            amount = (int) (Math.random() * 4) + 1;
+        } else {
+            amount = 1;
+        }
+        int item = cropInfo[0] * 100 - 1600 + amount;
+        System.out.println("item thing id idk: " + item);
+        calculateNextSlot(inventory, item, new int[]{2, 0, 1});
+        objectsMap[realRow][col] = -1;
+        cropDaysMap[row][col] = -1;
     }
 
     // drawing stuff
@@ -678,19 +753,20 @@ public class Game extends JPanel implements
                         drawX[j], drawY[i], 
                         (int) (16 * scalar), (int) (16 * scalar), this
                     );
-                    if (itemNumbers[0] < 32) {
-                        int[] numberPos = getNumberPos(drawX[j], drawY[i], scalar);
-                        if (itemNumbers[1] >= 10) {
-                            g.drawString(
-                                String.valueOf(itemNumbers[1]), 
-                                numberPos[0], numberPos[1]
-                            );
-                        } else {
-                            g.drawString(
-                                String.valueOf(itemNumbers[1]), 
-                                numberPos[2], numberPos[1]
-                            );
-                        }
+                    if (itemNumbers[0] >= 32) {
+                        continue;
+                    }
+                    int[] numberPos = getNumberPos(drawX[j], drawY[i], scalar);
+                    if (itemNumbers[1] >= 10) {
+                        g.drawString(
+                            String.valueOf(itemNumbers[1]), 
+                            numberPos[0], numberPos[1]
+                        );
+                    } else {
+                        g.drawString(
+                            String.valueOf(itemNumbers[1]), 
+                            numberPos[2], numberPos[1]
+                        );
                     }
                 }
             }
@@ -1038,9 +1114,9 @@ public class Game extends JPanel implements
     // use a different function to save to files or no idk???
     public void resetDay() {
         money += earned;
+        earned = 0;
         // reset earned after showing it, maybe call this when right before
         // the user leaves the end screen?
-        // earned = 0;
         days += 1;
         up = false;
         down = false;
@@ -1065,6 +1141,64 @@ public class Game extends JPanel implements
         // load shop, reset all seeds but not the tools, only check rows 0 and 1?
         // make all the crops grow
         resetArray(wetTilesMap);
+    }
+
+    // calcuations
+    public int[] calculateNextSlot(int[][] values, int item, int[] rowOrder) {
+        for (int row = 0; row < values.length; row++) {
+            int realRow = rowOrder[row];
+            for (int col = 0; col < values[realRow].length; col++) {
+
+                if (values[realRow][col] != -1 &&
+                    canStack(item, values[realRow][col])) {
+
+                    int[] firstInfo = getItemInfo(item);
+                    int[] secondInfo = getItemInfo(values[realRow][col]);
+
+                    if (secondInfo[1] < 99) {
+                        int itemType = firstInfo[0];
+                        int totalQuantity = secondInfo[1] + firstInfo[1];
+
+                        values[realRow][col] = itemType * 100 + totalQuantity;
+
+                        int[] coordinates = { realRow, col };
+                        printArray(coordinates);
+                        return coordinates;
+                    }
+                }
+            }
+        }
+        for (int row = 0; row < values.length; row++) {
+            int realRow = rowOrder[row];
+            for (int col = 0; col < values[realRow].length; col++) {
+
+                if (values[realRow][col] == -1) {
+                    values[realRow][col] = item;
+                    int[] coordinates = {realRow, col};
+                    printArray(coordinates);
+                    return coordinates;
+                }
+            }
+        }
+        return new int[]{-1, -1};
+    }
+
+    public void calculateEarnedMoney() {
+        System.out.println("earned before: " + earned);
+        int[] sellPrices = getItemSellPrices();
+        for (int i = 0; i < 18; i++) {
+            int row = i / 9;
+            int col = i % 9;
+            int item = sellInventory[row][col];
+            System.out.println(item + " " + row + " " + col);
+            if (item == -1) {
+                break;
+            }
+            int[] itemInfo = getItemInfo(item);
+            earned += sellPrices[itemInfo[0]] * itemInfo[1];
+        }
+        System.out.println("earned after: " + earned);
+        resetArray(sellInventory);
     }
 
     // initializing the game
@@ -1395,6 +1529,7 @@ public class Game extends JPanel implements
         File mapFile = new File("data/map.txt");
         File objectFile = new File("data/objectMap.txt");
         File storeFile = new File("data/store.txt");
+        File cropFile = new File("data/crop.txt");
 
         if (!folder.exists()) {
             if (!folder.mkdir()) {
@@ -1462,6 +1597,22 @@ public class Game extends JPanel implements
             } else {
                 int[][] loadedStoreItems = loadMap(storeFile);
                 storeItems = loadedStoreItems;
+            }
+            if (cropFile.length() == 0) {
+                PrintWriter out = new PrintWriter(new FileWriter("data/crop.txt"));
+                // make sure that if a plant is planted and not watered, days is 0
+                for (int i = 0; i < map.length; i++) {
+                    for (int j = 0; j < map[i].length; j++) {
+                        out.print("-1 ");
+                    }
+                    out.println();
+                }
+                out.close();
+                cropDaysMap = new int[map.length][map[0].length];
+                resetArray(cropDaysMap);
+            } else {
+                int[][] loadedCropDays = loadMap(cropFile);
+                cropDaysMap = loadedCropDays;
             }
             int[][] houseMap = {
                 {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -1615,6 +1766,9 @@ public class Game extends JPanel implements
 
             System.out.println("pressed at " + x + ", " + y);
             System.out.println("pressed tile: " + tileX + ", " + tileY);
+            System.out.println(
+                "crop day: " + cropDaysMap[tileY][tileX]
+            );
 
             if (item == 32) {
                 System.out.println("hoe tool");
@@ -1624,9 +1778,12 @@ public class Game extends JPanel implements
                 System.out.println("water bucket");
                 startActionAnimation("watering");
                 updateWateredTile(tileX, tileY);
+            } else if (tileY > 0 && objectsMap[tileY - 1][tileX] % 100 == 3) {
+                System.out.println("crop can be picked up");
+                updateCropHarvest(tileX, tileY);
             } else if (item >= 16 && item <= 27) {
                 System.out.println("crop");
-                updateCrop(tileX, tileY);
+                updateCropPlaced(tileX, tileY);
             }
         } else if (state.equals("inv")) {
             int scalar = 3;
@@ -1639,14 +1796,15 @@ public class Game extends JPanel implements
                         actualX >= slotX && actualX < slotX + 16 * scalar &&
                         actualY >= slotY && actualY < slotY + 16 * scalar
                     ) {
-                        if (inventory[row][col] >= 0) {
-                            draggedItemRow = row;
-                            draggedItemCol = col;
-                            draggedItem = inventory[row][col];
-                            inventory[row][col] = -2;
-                            invX = actualX;
-                            invY = actualY;
+                        if (inventory[row][col] < 0) {
+                            continue;
                         }
+                        draggedItemRow = row;
+                        draggedItemCol = col;
+                        draggedItem = inventory[row][col];
+                        inventory[row][col] = -2;
+                        invX = actualX;
+                        invY = actualY;
                         return;
                     }
                 }
@@ -1665,29 +1823,36 @@ public class Game extends JPanel implements
                     ) {
                         System.out.println(col + " " + row);
                         int item = inventory[row][col];
-                        for (int i = 0; i < 18; i++) {
-                            int sellRow = i / 9;
-                            int sellColumn = i % 9;
-                            if (sellInventory[sellRow][sellColumn] == -1) {
-                                sellInventory[sellRow][sellColumn] = item;
-                                inventory[row][col] = -1;
-                                break;
-                            } else if (
-                                canStack(item, sellInventory[sellRow][sellColumn])
-                            ) {
-                                int[] firstInfo = getItemInfo(item);
-                                int[] secondInfo = getItemInfo(sellInventory[sellRow][sellColumn]);
-                                
-                                int itemType = firstInfo[0];
-                                int totalQuantity = firstInfo[1] + secondInfo[1];
-                                System.out.println(firstInfo[1] + " " + secondInfo[1] + " " + secondInfo[0]);
-                                sellInventory[sellRow][sellColumn] = (
-                                    itemType * 100 + totalQuantity
-                                );
-                                inventory[row][col] = -1;
-                                break;
-                            }
+                        int[] sellRowOrder = {0, 1};
+                        int[] coords = calculateNextSlot(
+                            sellInventory, item, sellRowOrder
+                        );
+                        if (coords[0] != -1) {
+                            inventory[row][col] = -1;
                         }
+                    }
+                }
+            }
+            for (int i = 0; i < 18; i++) {
+                int row = i / 9;
+                int col = i % 9;
+                if (
+                    actualX >= slotPositions[0][col][0] && 
+                    actualX < slotPositions[0][col][0] + 16 * scalar &&
+                    actualY >= 120 + row * 20 * scalar && 
+                    actualY < 120 + 16 * scalar + row * 20 * scalar &&
+                    sellInventory[row][col] >= 0 && sellInventory[row][col] < 3200
+                ) {
+                    System.out.println(col + " " + row);
+                    int item = sellInventory[row][col];
+
+                    int[] invRowOrder = { 2, 0, 1 };
+                    int[] coords = calculateNextSlot(
+                        inventory, item, invRowOrder
+                    );
+
+                    if (coords[0] != -1) {
+                        sellInventory[row][col] = -1;
                     }
                 }
             }
@@ -1827,8 +1992,14 @@ public class Game extends JPanel implements
             } else if (key == KeyEvent.VK_S) {
                 down = true;
                 up = false;
-            } else if (key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9) {
-                hotbarSlot = Integer.parseInt(KeyEvent.getKeyText(key)) - 1;
+            } else if (state.equals("game")) {
+                if (key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9) {
+                    hotbarSlot = Integer.parseInt(KeyEvent.getKeyText(key)) - 1;
+                } else if (key == KeyEvent.VK_L) {
+                    // test key for now
+                    System.out.println("clicked l");
+                    updateCropGrowth();
+                }
             }
         }
         if (key == KeyEvent.VK_E) {
@@ -1848,8 +2019,7 @@ public class Game extends JPanel implements
                 state = "game";
             } else if(state.equals("sell")) {
                 state = "game";
-                resetArray(sellInventory);
-                // call function to add to earned
+                calculateEarnedMoney();
             }
         }
     }
