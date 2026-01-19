@@ -421,13 +421,59 @@ public class Game extends JPanel implements
         return value >= 0 && value < 16;
     }
 
-    public void updateTile(int col, int row) {
+    public void updateTile(int col, int row, int itemId) {
+        int[][] offsets;
+        if (itemId == 32 || itemId == 33) {
+            offsets = new int[][]{{0, 0}};
+        } else if (itemId == 34 || itemId == 37) {
+            offsets = new int[][]{{0, 0}, {1, 0}, {0, 1}, {1, 1}};
+        } else if (itemId == 35 || itemId == 38) {
+            offsets = new int[][]{
+                {-1, -1}, {0, -1}, {1, -1},
+                {-1, 0},  {0, 0},  {1, 0},
+                {-1, 1},  {0, 1},  {1, 1}
+            };
+        } else if (itemId == 36 || itemId == 39) {
+            offsets = new int[][]{
+                {-2, -2}, {-1, -2}, {0, -2}, {1, -2}, {2, -2},
+                {-2, -1}, {-1, -1}, {0, -1}, {1, -1}, {2, -1},
+                {-2, 0},  {-1, 0},  {0, 0},  {1, 0},  {2, 0},
+                {-2, 1},  {-1, 1},  {0, 1},  {1, 1},  {2, 1},
+                {-2, 2},  {-1, 2},  {0, 2},  {1, 2},  {2, 2}
+            };
+        } else {
+            System.out.println("eeeeeee");
+            return;
+        }
+
+        for (int i = 0; i < offsets.length; i++) {
+            int targetCol = col + offsets[i][0];
+            int targetRow = row + offsets[i][1];
+
+            if (
+                targetRow < 0 || targetRow >= map.length || 
+                targetCol < 0 || targetCol >= map[0].length
+            ) {
+                System.out.println("eee");
+                continue;
+            }
+
+            boolean isHoe = itemId == 32 || (itemId >= 34 && itemId <= 36);
+            
+            if (isHoe) {
+                System.out.println(i);
+                updateSingleTile(targetCol, targetRow);
+            } else {
+                updateWateredTile(targetCol, targetRow);
+            }
+        }
+    }
+
+    public void updateSingleTile(int col, int row) {
         int num = map[row][col];
-        
         if (!isFarmland(num) && num != 32) {
             return;
         }
-        
         if (num == 32) {
             int mask = 0;
             if (row > 0 && isFarmland(map[row - 1][col])) {
@@ -443,13 +489,12 @@ public class Game extends JPanel implements
                 mask += 8;
             }
             map[row][col] = mask;
-        } else {
-            map[row][col] = 32;
         }
         
         System.out.println(
             "update tile at (" + col + ", " + row + "): " + num + " to " + map[row][col]
         );
+
         if (row > 0) {
             updateTileMask(col, row - 1);
         }
@@ -489,13 +534,62 @@ public class Game extends JPanel implements
         System.out.println("update edge to: " + map[row][col]);
     }
 
-    // change this to also use update tile
     public void updateWateredTile(int col, int row) {
         int num = map[row][col];
         if (!isFarmland(num)) {
             return;
         }
-        wetTilesMap[row][col] = 1;
+
+        int mask = 0;
+        if (row > 0 && wetTilesMap[row - 1][col] > -1) {
+            mask += 1;
+        }
+        if (col < map[0].length - 1 && wetTilesMap[row][col + 1] > -1) {
+            mask += 2;
+        }
+        if (row < map.length - 1 && wetTilesMap[row + 1][col] > -1) {
+            mask += 4;
+        }
+        if (col > 0 && wetTilesMap[row][col - 1] > -1) {
+            mask += 8;
+        }
+        
+        wetTilesMap[row][col] = mask;
+
+        if (row > 0 && wetTilesMap[row - 1][col] > -1) {
+            updateWateredTileMask(col, row - 1);
+        }
+        if (col < map[0].length - 1 && wetTilesMap[row][col + 1] > -1) {
+            updateWateredTileMask(col + 1, row);
+        }
+        if (row < map.length - 1 && wetTilesMap[row + 1][col] > -1) {
+            updateWateredTileMask(col, row + 1);
+        }
+        if (col > 0 && wetTilesMap[row][col - 1] > -1) {
+            updateWateredTileMask(col - 1, row);
+        }
+    }
+
+    public void updateWateredTileMask(int col, int row) {
+        if (wetTilesMap[row][col] == -1) {
+            return;
+        }
+        
+        int mask = 0;
+        if (row > 0 && wetTilesMap[row - 1][col] > -1) {
+            mask += 1;
+        }
+        if (col < map[0].length - 1 && wetTilesMap[row][col + 1] > -1) {
+            mask += 2;
+        }
+        if (row < map.length - 1 && wetTilesMap[row + 1][col] > -1) {
+            mask += 4;
+        }
+        if (col > 0 && wetTilesMap[row][col - 1] > -1) {
+            mask += 8;
+        }
+        
+        wetTilesMap[row][col] = mask;
     }
 
     public boolean updateBoughtItem(int col, int row) {
@@ -511,10 +605,25 @@ public class Game extends JPanel implements
             return false;
         }
         int[] rowOrder = {2, 0, 1};
-        int[] coordinates = calculateNextSlot(inventory, itemId * 100 + 1, rowOrder);
-        printArray(coordinates);
-        if (coordinates[0] == -1 || coordinates[1] == -1) {
-            return false;
+        if (itemId < 32) {
+            System.out.println("buy crop");
+            int[] coordinates = calculateNextSlot(inventory, itemId * 100 + 1, rowOrder);
+            printArray(coordinates);
+            if (coordinates[0] == -1 || coordinates[1] == -1) {
+                return false;
+            }
+        } else {
+            if (itemId >= 34 && itemId <= 36) {
+                System.out.println("buy hoe");
+            } else if (itemId >= 37 && itemId <= 39) {
+                System.out.println("buy watering can");
+            } else {
+                return false;
+            }
+            int[] coordinates = calculateNextSlot(inventory, itemId * 100 + 1, rowOrder);
+            if (coordinates[0] == -1 || coordinates[1] == -1) {
+                return false;
+            }
         }
         storeItems[row][col]--;
         money -= cost;
@@ -1250,6 +1359,27 @@ public class Game extends JPanel implements
                 storeItems[i][j] = defaultStore[i][j];
             }
         }
+        for (int i = 0; i < map.length; i++) {
+            for (int j = 0; j < map[0].length; j++) {
+                if (map[i][j] >= 0 && map[i][j] <= 15) {
+                    if (wetTilesMap[i][j] == -1 && objectsMap[i - 1][j] == -1) {
+                        map[i][j] = 32;
+                        if (i > 0) {
+                            updateTileMask(j, i - 1);
+                        }
+                        if (j < map[0].length - 1) {
+                            updateTileMask(j + 1, i);
+                        }
+                        if (i < map.length - 1) {
+                            updateTileMask(j, i + 1);
+                        }
+                        if (j > 0) {
+                            updateTileMask(j - 1, i);
+                        }
+                    }
+                }
+            }
+        }
         updateCropGrowth();
         resetArray(wetTilesMap);
     }
@@ -1259,9 +1389,11 @@ public class Game extends JPanel implements
         for (int row = 0; row < values.length; row++) {
             int realRow = rowOrder[row];
             for (int col = 0; col < values[realRow].length; col++) {
-
-                if (values[realRow][col] != -1 &&
-                    canStack(item, values[realRow][col])) {
+                if (
+                    values[realRow][col] != -1 &&
+                    item < 3200 &&
+                    canStack(item, values[realRow][col])
+                ) {
 
                     int[] firstInfo = getItemInfo(item);
                     int[] secondInfo = getItemInfo(values[realRow][col]);
@@ -1272,12 +1404,37 @@ public class Game extends JPanel implements
 
                         values[realRow][col] = itemType * 100 + totalQuantity;
 
-                        int[] coordinates = { realRow, col };
+                        int[] coordinates = {realRow, col};
                         printArray(coordinates);
                         return coordinates;
                     }
+                } else if (
+                    (
+                        values[realRow][col] == 3201 || 
+                        (values[realRow][col] >= 3400 && values[realRow][col] <= 3601)
+                    ) &&
+                    item >= 3400 && item <= 3601
+                ) {
+                    if (item > values[realRow][col]) {
+                        values[realRow][col] = item;
+                        return new int[]{realRow, col};
+                    }
+                } else if (
+                    (
+                        values[realRow][col] == 3301 || 
+                        (values[realRow][col] >= 3700 && values[realRow][col] <= 3901)
+                    ) &&
+                    item >= 3700 && item <= 3901
+                ) {
+                    if (item > values[realRow][col]) {
+                        values[realRow][col] = item;
+                        return new int[]{realRow, col};
+                    }
                 }
             }
+        }
+        if (item >= 3200) {
+            return new int[]{-1, -1};
         }
         for (int row = 0; row < values.length; row++) {
             int realRow = rowOrder[row];
@@ -1557,17 +1714,11 @@ public class Game extends JPanel implements
                         TILE_LENGTH, TILE_LENGTH, this
                     );
                 }
-            }
-        }
-        // for drawing watered tiles
-        for (int row = startRow; row <= endRow; row++) {
-            for (int col = startCol; col <= endCol; col++) {
-                int x = col * TILE_LENGTH - cameraX;
-                int y = row * TILE_LENGTH - cameraY;
-                int tile = wetTilesMap[row][col];
-                if (tile == 1 && isFarmland(map[row][col])) {
+
+                int wetTile = wetTilesMap[row][col];
+                if (wetTile >= 0 && isFarmland(map[row][col])) {
                     offScreenBuffer.drawImage(
-                        objectImages[3][map[row][col]], 
+                        objectImages[3][wetTile], 
                         x, y, TILE_LENGTH, TILE_LENGTH, this
                     );
                 }
@@ -1917,14 +2068,14 @@ public class Game extends JPanel implements
             if (tileY > 0 && objectsMap[tileY - 1][tileX] % 100 == 3) {
                 System.out.println("crop can be picked up");
                 updateCropHarvest(tileX, tileY);
-            } else if (item == 32) {
+            } else if (item == 32 || item == 34 || item == 35 || item == 36) {
                 System.out.println("hoe tool");
                 startActionAnimation("hoeing");
-                updateTile(tileX, tileY);
-            } else if (item == 33) {
+                updateTile(tileX, tileY, item);
+            } else if (item == 33 || item == 37 || item == 38 || item == 39) {
                 System.out.println("water bucket");
                 startActionAnimation("watering");
-                updateWateredTile(tileX, tileY);
+                updateTile(tileX, tileY, item);
             } else if (item >= 16 && item <= 27) {
                 System.out.println("crop");
                 updateCropPlaced(tileX, tileY);
