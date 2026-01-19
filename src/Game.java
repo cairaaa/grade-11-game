@@ -1073,7 +1073,7 @@ public class Game extends JPanel implements
     }
 
     public void drawEnd(Graphics g) {
-        g.drawImage(uiImages[8], 0, 0, this);
+        g.drawImage(uiImages[10], 0, 0, this);
         Font newFont = font.deriveFont(Font.PLAIN, 40f);
         g.setFont(newFont);
         int x = 150;
@@ -1328,6 +1328,11 @@ public class Game extends JPanel implements
     }
 
     public void resetDay() {
+        try {
+            saveFilesNextDay();
+        } catch (IOException e) {
+
+        }
         earned = 0;
         days += 1;
         up = false;
@@ -1467,6 +1472,34 @@ public class Game extends JPanel implements
         }
         System.out.println("earned after: " + earned);
         resetArray(sellInventory);
+    }
+
+    // saving
+    public void saveFile(File file, int[][] values) throws IOException {
+        PrintWriter out = new PrintWriter(file);
+        for (int i = 0; i < values.length; i++) {
+            for (int j = 0; j < values[i].length; j++) {
+                out.print(values[i][j] + " ");
+            }
+            out.println();
+        }
+        out.close();
+    }
+
+    public void saveFilesNextDay() throws IOException {
+        File generalFile = new File("data/general.txt");
+        File inventoryFile = new File("data/inv.txt");
+        File mapFile = new File("data/map.txt");
+        File objectFile = new File("data/objectMap.txt");
+        File storeFile = new File("data/store.txt");
+        File cropFile = new File("data/crop.txt");
+
+        saveFile(generalFile, new int[][]{{money, days}});
+        saveFile(inventoryFile, inventory);
+        saveFile(mapFile, map);
+        saveFile(objectFile, objectsMap);
+        saveFile(storeFile, storeItems);
+        saveFile(cropFile, cropDaysMap);
     }
 
     // initializing the game
@@ -1812,85 +1845,45 @@ public class Game extends JPanel implements
                 days = generalArray[1];
             }
             if (inventoryFile.length() == 0) {
-                PrintWriter out = new PrintWriter(new FileWriter("data/inv.txt"));
                 int[][] defaultInventory = new int[3][9];
                 resetArray(defaultInventory);
                 defaultInventory[2][0] = 3201;
                 defaultInventory[2][1] = 3301;
                 defaultInventory[2][2] = 1610;
-                for (int i = 0; i < defaultInventory.length; i++) {
-                    for (int j = 0; j < defaultInventory[i].length; j++) {
-                        if (defaultInventory[i][j] == -1) {
-                            out.print("-1 ");
-                        } else {
-                            out.print(defaultInventory[i][j] + " ");
-                        }
-                    }
-                    out.println();
-                }
+                saveFile(inventoryFile, defaultInventory);
                 inventory = defaultInventory;
-                out.close();
             } else {
                 int[][] loadedInventory = loadMap(inventoryFile);
                 inventory = loadedInventory;
             }
             if (mapFile.length() == 0) {
-                PrintWriter out = new PrintWriter(new FileWriter("data/map.txt"));
                 int[][] defaultMap = getDefaultMap();
                 map = defaultMap;
-                for (int i = 0; i < map.length; i++) {
-                    for (int j = 0; j < map[i].length; j++) {
-                        out.print(map[i][j] + " ");
-                    }
-                    out.println();
-                }
-                out.close();
+                saveFile(mapFile, map);
             } else {
                 int[][] loadedMap = loadMap(mapFile);
                 map = loadedMap;
             }
             if (objectFile.length() == 0) {
-                PrintWriter out = new PrintWriter(new FileWriter("data/objectMap.txt"));
                 int[][] defaultMap = getDefaultObjectMap();
                 objectsMap = defaultMap;
-                for (int i = 0; i < objectsMap.length; i++) {
-                    for (int j = 0; j < objectsMap[i].length; j++) {
-                        out.print(objectsMap[i][j] + " ");
-                    }
-                    out.println();
-                }
-                out.close();
+                saveFile(objectFile, objectsMap);
             } else {
                 int[][] loadedObjectsMap = loadMap(objectFile);
                 objectsMap = loadedObjectsMap;
             }
             if (storeFile.length() == 0) {
-                PrintWriter out = new PrintWriter(new FileWriter("data/store.txt"));
                 int[][] defaultStore = getDefaultStore();
                 storeItems = defaultStore;
-                for (int i = 0; i < storeItems.length; i++) {
-                    for (int j = 0; j < storeItems[i].length; j++) {
-                        out.print(storeItems[i][j] + " ");
-                    }
-                    out.println();
-                }
-                out.close();
+                saveFile(storeFile, storeItems);
             } else {
                 int[][] loadedStoreItems = loadMap(storeFile);
                 storeItems = loadedStoreItems;
             }
             if (cropFile.length() == 0) {
-                PrintWriter out = new PrintWriter(new FileWriter("data/crop.txt"));
-                // make sure that if a plant is planted and not watered, days is 0
-                for (int i = 0; i < map.length; i++) {
-                    for (int j = 0; j < map[i].length; j++) {
-                        out.print("-1 ");
-                    }
-                    out.println();
-                }
-                out.close();
                 cropDaysMap = new int[map.length][map[0].length];
                 resetArray(cropDaysMap);
+                saveFile(cropFile, cropDaysMap);
             } else {
                 int[][] loadedCropDays = loadMap(cropFile);
                 cropDaysMap = loadedCropDays;
