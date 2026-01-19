@@ -37,8 +37,10 @@ public class Game extends JPanel implements
 
     int[][] houseTiles;
     int[][] houseObjects;
+    boolean[][] houseHitboxes;
 
     int[][] cropDaysMap;
+    boolean[][] hitboxes;
     
     BufferedImage[][] tileImages = new BufferedImage[5][16];
     BufferedImage[][] objectImages = new BufferedImage[5][16];
@@ -94,6 +96,13 @@ public class Game extends JPanel implements
     // store related
     int storeSelected = -1;
     int[][] storeItems = new int[6][6];
+
+    // end screen
+    int moneyAnimationFrames = 0;
+    int duration = 30;
+    int baseSpeed = 67;
+    int displayedMoney;
+    boolean isAnimatingMoney;
 
     // remove later
     JLabel cameraLocation;
@@ -631,6 +640,17 @@ public class Game extends JPanel implements
         cropDaysMap[row][col] = -1;
     }
 
+    public void updateHitboxes(int col, int row, int width, int height) {
+        for (int y = row; y < row + height; y++) {
+            for (int x = col; x < col + width; x++) {
+                if (y >= 0 && y < hitboxes.length &&
+                    x >= 0 && x < hitboxes[0].length) {
+                    hitboxes[y][x] = true;
+                }
+            }
+        }
+    }
+
     // drawing stuff
     public void drawPlayer(Graphics g, int index, boolean isGame) {
         int frameToDraw;
@@ -943,6 +963,40 @@ public class Game extends JPanel implements
         }
     }
 
+    public void drawEnd(Graphics g) {
+        g.drawImage(uiImages[8], 0, 0, this);
+        Font newFont = font.deriveFont(Font.PLAIN, 40f);
+        g.setFont(newFont);
+        int x = 150;
+        g.drawString("Today you earned..", x, 200);
+        g.setColor(Color.YELLOW);
+        g.drawString("$" + displayedMoney, x, 275);
+        if (earned == 0) {
+            g.drawString(":(", x + 65, 275);
+        }
+        g.setColor(new Color(242, 236, 208));
+        if (!isAnimatingMoney) {
+            Font anotherNewFont = font.deriveFont(Font.PLAIN, 20f);
+            g.setFont(anotherNewFont);
+            g.drawString("Total money: ", x, 320);
+            g.setColor(Color.YELLOW);
+            g.drawString("$" + money, x + 130, 320);
+            int[] buttonDimensions = getImageDim(uiImages[6], 3);
+            buttonDimensions[1] -= 20;
+            g.drawImage(
+                uiImages[6], x, 360, buttonDimensions[0], buttonDimensions[1], this
+            );
+            g.drawImage(
+                uiImages[9], x + 175, 360, 
+                buttonDimensions[0], buttonDimensions[1], this
+            );
+            g.setColor(new Color(242, 236, 208));
+            g.drawString("Next Day", x + 25, 396);
+            g.drawString("Back", x + 200, 396);
+        }
+        g.setFont(font);
+    }
+
     // clicking related
     public int getTileClicked(
         int clickX, 
@@ -970,26 +1024,39 @@ public class Game extends JPanel implements
 
     // movement/keyboard related
     public void move() {
-        // change this later so its only in bounds for all directions
-		if (left) {
-            // if (cameraX > 0) {
-                cameraX -= speed;
-            // }
+        int nextCameraX = cameraX;
+        if (left) {
+            nextCameraX -= speed;
         } else if (right) {
-            cameraX += speed;
+            nextCameraX += speed;
         }
-        
+        int nextTileX = (nextCameraX + SCREEN_WIDTH / 2) / TILE_LENGTH;
+        if (
+            nextTileX >= 0 &&
+            nextTileX < hitboxes[0].length &&
+            !hitboxes[playerTileY][nextTileX]
+        ) {
+            cameraX = nextCameraX;
+        }
+
+        int nextCameraY = cameraY;
         if (up) {
-            // if (cameraY > 0) {
-                cameraY -= speed;
-            // }
+            nextCameraY -= speed;
         } else if (down) {
-            cameraY += speed;
+            nextCameraY += speed;
         }
+        int nextTileY = (nextCameraY + SCREEN_HEIGHT / 2) / TILE_LENGTH;
+        if (
+            nextTileY >= 0 &&
+            nextTileY < hitboxes.length &&
+            !hitboxes[nextTileY][playerTileX]
+        ) {
+            cameraY = nextCameraY;
+        }
+
         playerTileX = (cameraX + SCREEN_WIDTH / 2) / TILE_LENGTH;
         playerTileY = (cameraY + SCREEN_HEIGHT / 2) / TILE_LENGTH;
 
-        // maybe add this with the other if statements later
         if (up) {
             lastDirection = "up";
         } else if (down) {
@@ -999,7 +1066,7 @@ public class Game extends JPanel implements
         } else if (right) {
             lastDirection = "right";
         }
-	}
+    }
 
     public void moveStationaryCamera() {
         if (left) {
@@ -1060,6 +1127,39 @@ public class Game extends JPanel implements
         actionAnimationCounter = 0;
     }
 
+    public void startMoneyAnimation() {
+        if (earned == 0) {
+            return;
+        }
+        money += earned;
+        System.out.println("earned: " + earned + ", baseSpeed: " + baseSpeed);
+        int estimatedFrames = earned / baseSpeed;
+        duration = Math.max(Math.min(estimatedFrames, 60), 30);
+        System.out.println("duration set to: " + duration);
+        displayedMoney = 0;
+
+        moneyAnimationFrames = 0;
+        isAnimatingMoney = true;
+    }
+
+    public void updateMoneyAnimation() {
+        if (!isAnimatingMoney) {
+            return;
+        }
+
+        moneyAnimationFrames += 1;
+
+        double time = (double) moneyAnimationFrames / duration;
+        double actualTime = Math.min(time, 1.0);
+
+        displayedMoney = earned - (int) ((1.0 - actualTime) * earned);
+
+        if (actualTime >= 1.0) {
+            displayedMoney = earned;
+            isAnimatingMoney = false;
+        }
+    }
+
     // state related
     public void checkState() {
         if (state.equals("game")) {
@@ -1079,7 +1179,7 @@ public class Game extends JPanel implements
                 canTriggerSell = false;
             } 
         } else if (state.equals("house")) {
-            if (playerTileX == 1 && playerTileY == 6) {
+            if (playerTileX >= 0 && playerTileY == 6) {
                 state = "game";
                 cameraX = 480;
                 cameraY = 840;
@@ -1088,6 +1188,7 @@ public class Game extends JPanel implements
                 lastDirection = "down";
             } else if ((playerTileX == 1 || playerTileX == 2) && playerTileY == 2) {
                 state = "end";
+                startMoneyAnimation();
                 // call function to reset everything
             }
         }
@@ -1101,6 +1202,8 @@ public class Game extends JPanel implements
                 secondsPassed += 1;
                 if (secondsPassed >= 17 * 20) {
                     // calculate smth as the day is over
+                    state = "end";
+                    startMoneyAnimation();
                     secondsPassed = 0;
                 }
                 totalMinutes = 7 * 60 + secondsPassed * 3;
@@ -1108,24 +1211,23 @@ public class Game extends JPanel implements
                 hours = totalMinutes / 60 % 24;
                 minutes = totalMinutes % 60;
             }
+        } else if (state.equals("end")) {
+            // reset these variables when the user clicks next day or back
+            // to title screen
+            // call function here
         }
     }
 
-    // use a different function to save to files or no idk???
     public void resetDay() {
-        money += earned;
         earned = 0;
-        // reset earned after showing it, maybe call this when right before
-        // the user leaves the end screen?
         days += 1;
         up = false;
         down = false;
         left = false;
         right = false;
         lastDirection = "down";
-        // change houseX to find the best spot
-        houseX = 300;
-        houseY = 380;
+        houseX = 67;
+        houseY = 220;
         movementAnimationFrame = 0;
         movementAnimationCounter = 0;
         actionAnimationFrame = 0;
@@ -1138,8 +1240,17 @@ public class Game extends JPanel implements
         hours = 0;
         minutes = 0;
         hotbarSlot = 0;
-        // load shop, reset all seeds but not the tools, only check rows 0 and 1?
-        // make all the crops grow
+        moneyAnimationFrames = 0;
+        duration = 30;
+        displayedMoney = 0;
+        isAnimatingMoney = false;
+        int[][] defaultStore = getDefaultStore();
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 6; j++) {
+                storeItems[i][j] = defaultStore[i][j];
+            }
+        }
+        updateCropGrowth();
         resetArray(wetTilesMap);
     }
 
@@ -1323,6 +1434,38 @@ public class Game extends JPanel implements
         return map;
     }
 
+    public boolean[][] getHitboxes() {
+        int[][] objectMap = getDefaultObjectMap();
+        boolean[][] array = new boolean[objectMap.length][objectMap[0].length];
+        hitboxes = array;
+        for (int i = 0; i < array.length; i++) {
+            array[i][7] = true;
+            array[i][41] = true;
+        }
+        for (int i = 0; i < array[0].length; i++) {
+            array[7][i] = true;
+            array[45][i] = true;
+        }
+        for (int row = 0; row < objectMap.length; row++) {
+            for (int col = 0; col < objectMap[row].length; col++) {
+                int object = objectMap[row][col];
+                if (object >= 16 && object < 48) {
+                    int[] indexes = getTileParts(object);
+                    int[] imageDimensions = getImageDim(
+                        objectImages[indexes[0]][indexes[1]], 4
+                    );
+                    int width = imageDimensions[0] / 64;
+                    int height = imageDimensions[1] / 64;
+                    System.out.println(object + " " + width + " " + height);
+                    updateHitboxes(col, row, width, height - 1);
+                }
+            }
+        }
+        array[16][13] = false;
+        array[18][31] = false;
+        return array;
+    }
+
     public int[][] getDefaultStore() {
         int[][] store = {
             {1610, 1710, 1810, 1910, 2010, 2110},
@@ -1333,38 +1476,6 @@ public class Game extends JPanel implements
             {-1, -1, -1, -1, -1, -1}
         };
         return store;
-    }
-
-    public void loadInventory() throws IOException {
-        Scanner inFile = new Scanner(new File("data/inv.txt"));
-        inventory[2] = hotbar;
-        if (!inFile.hasNextLine()) {
-            hotbar[0] = 3201;
-            hotbar[1] = 3301;
-            hotbar[2] = 1610;
-            PrintWriter out = new PrintWriter(new FileWriter("data/inv.txt"));
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 9; j++) {
-                    if (inventory[i][j] != 0) {
-                        out.print(inventory[i][j] + " ");
-                    } else {
-                        inventory[i][j] = -1;
-                        out.print(-1 + " ");
-                    }
-                }
-                out.println();
-            }
-            inFile.close();
-            out.close();
-            return;
-        }
-        for (int i = 0; i < 3; i++) {
-            String[] values = inFile.nextLine().split(" ");
-            for (int j = 0; j < values.length; j++) {
-                inventory[i][j] = Integer.parseInt(values[j]);
-            }
-        }
-        inFile.close();
     }
 
     public int[][] loadMap(File mapFile) throws FileNotFoundException {
@@ -1551,7 +1662,26 @@ public class Game extends JPanel implements
             }
             if (inventoryFile.length() == 0) {
                 PrintWriter out = new PrintWriter(new FileWriter("data/inv.txt"));
+                int[][] defaultInventory = new int[3][9];
+                resetArray(defaultInventory);
+                defaultInventory[2][0] = 3201;
+                defaultInventory[2][1] = 3301;
+                defaultInventory[2][2] = 1610;
+                for (int i = 0; i < defaultInventory.length; i++) {
+                    for (int j = 0; j < defaultInventory[i].length; j++) {
+                        if (defaultInventory[i][j] == -1) {
+                            out.print("-1 ");
+                        } else {
+                            out.print(defaultInventory[i][j] + " ");
+                        }
+                    }
+                    out.println();
+                }
+                inventory = defaultInventory;
                 out.close();
+            } else {
+                int[][] loadedInventory = loadMap(inventoryFile);
+                inventory = loadedInventory;
             }
             if (mapFile.length() == 0) {
                 PrintWriter out = new PrintWriter(new FileWriter("data/map.txt"));
@@ -1614,6 +1744,7 @@ public class Game extends JPanel implements
                 int[][] loadedCropDays = loadMap(cropFile);
                 cropDaysMap = loadedCropDays;
             }
+            hotbar = inventory[2];
             int[][] houseMap = {
                 {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
                 {-1, 65, 66, 66, 66, 66, 66, 66, 66, 66, 67, -1},
@@ -1638,6 +1769,17 @@ public class Game extends JPanel implements
                 {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
             };
             houseObjects = objectHouseMap;
+            // houseHitboxes = new boolean[][]{
+            //     {true, true, true, true, true, true, true, true, true, true, true, true},
+            //     {true, true, true, true, true, true, true, true, true, true, true, true},
+            //     {true, true, true, true, true, true, true, true, true, true, true, true},
+            //     {true, false, false, false, true, true, true, true, true, true, true, true},
+            //     {true, false, false, false, true, true, true, true, true, true, true, true},
+            //     {true, false, false, true, true, true, true, true, true, true, true, true},
+            //     {true, true, false, true, true, true, true, true, true, true, true, true},
+            //     {true, true, false, true, true, true, true, true, true, true, true, true},
+            //     {true, true, false, true, true, true, true, true, true, true, true, true},
+            // };
             // can add trophy here if the user has one??
             // check if this is correct later
             String[] cropFolders = (new File("assets/object-crops")).list();
@@ -1660,7 +1802,6 @@ public class Game extends JPanel implements
             wetTilesMap = new int[map.length][map[0].length];
             resetArray(wetTilesMap);
             resetArray(sellInventory);
-            loadInventory();
 
             tileImages[0] = loadImages(new File("assets/tiles/farmland"), true);
             tileImages[1] = loadImages(new File("assets/tiles/grass"), true);
@@ -1683,6 +1824,8 @@ public class Game extends JPanel implements
             playerImages = loadImages(new File("assets/player"), false);
             uiImages = loadImages(new File("assets/ui"), false);
             stateImages = loadImages(new File("assets/state"), false);
+
+            hitboxes = getHitboxes();
         } catch (IOException e) {
 
         }
@@ -1728,7 +1871,9 @@ public class Game extends JPanel implements
             cameraLocation.setText("camera: " + cameraX + " " + cameraY);
             playerLocation.setText("player: " + playerTileX + " " + playerTileY);
         } else if (state.equals("end")) {
-            // add stuff
+            drawEnd(g);
+            cameraLocation.setText("");
+            playerLocation.setText("");
         }
     }
 
@@ -1769,8 +1914,10 @@ public class Game extends JPanel implements
             System.out.println(
                 "crop day: " + cropDaysMap[tileY][tileX]
             );
-
-            if (item == 32) {
+            if (tileY > 0 && objectsMap[tileY - 1][tileX] % 100 == 3) {
+                System.out.println("crop can be picked up");
+                updateCropHarvest(tileX, tileY);
+            } else if (item == 32) {
                 System.out.println("hoe tool");
                 startActionAnimation("hoeing");
                 updateTile(tileX, tileY);
@@ -1778,9 +1925,6 @@ public class Game extends JPanel implements
                 System.out.println("water bucket");
                 startActionAnimation("watering");
                 updateWateredTile(tileX, tileY);
-            } else if (tileY > 0 && objectsMap[tileY - 1][tileX] % 100 == 3) {
-                System.out.println("crop can be picked up");
-                updateCropHarvest(tileX, tileY);
             } else if (item >= 16 && item <= 27) {
                 System.out.println("crop");
                 updateCropPlaced(tileX, tileY);
@@ -1880,6 +2024,22 @@ public class Game extends JPanel implements
             ) {
                 int[] info = getStoreItem(storeSelected);
                 System.out.println(updateBoughtItem(info[1], info[0]));
+            }
+        } else if (state.equals("end")) {
+            int[] buttonDimensions = getImageDim(uiImages[6], 3);
+            buttonDimensions[1] -= 20;
+            if (
+                actualX >= 150 && actualX <= 150 + buttonDimensions[0] &&
+                actualY >= 360 && actualY <= 360 + buttonDimensions[1]
+            ) {
+                state = "house";
+                resetDay();
+            } else if (
+                actualX >= 325 && actualX <= 325 + buttonDimensions[0] &&
+                actualY >= 360 && actualY <= 360 + buttonDimensions[1]
+            ) {
+                state = "title";
+                resetDay();
             }
         }
     }
@@ -2017,9 +2177,11 @@ public class Game extends JPanel implements
                 storeSelected = -1;
             } else if (state.equals("inv")) {
                 state = "game";
-            } else if(state.equals("sell")) {
+            } else if (state.equals("sell")) {
                 state = "game";
                 calculateEarnedMoney();
+            } else if (state.equals("end")) {
+                state = "title";
             }
         }
     }
@@ -2058,6 +2220,8 @@ public class Game extends JPanel implements
                 move();
             } else if (state.equals("house")) {
                 moveStationaryCamera();
+            } else if (state.equals("end")) {
+                updateMoneyAnimation();
             }
             animatePlayer();
             calculateTime();
