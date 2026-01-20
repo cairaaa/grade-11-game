@@ -62,7 +62,7 @@ public class Game extends JPanel implements
     String lastDirection = "down";
 
     int houseX = 67;
-    int houseY = 380;
+    int houseY = 220;
 
     // animation
     int movementAnimationFrame = 0;
@@ -81,7 +81,10 @@ public class Game extends JPanel implements
     int minutes;
     int increment = 30;
     boolean canTriggerSell;
-    String state = "game";
+    boolean isCreditsOpen = false;
+    boolean isInstructionsOpen = false;
+    int instructionPage = 0;
+    String state = "title";
     
     // inventory related
     int hotbarSlot = 0;
@@ -1073,6 +1076,7 @@ public class Game extends JPanel implements
     }
 
     public void drawEnd(Graphics g) {
+        g.setColor(new Color(87, 84, 74));
         g.drawImage(uiImages[10], 0, 0, this);
         Font newFont = font.deriveFont(Font.PLAIN, 40f);
         g.setFont(newFont);
@@ -1083,7 +1087,7 @@ public class Game extends JPanel implements
         if (earned == 0) {
             g.drawString(":(", x + 65, 275);
         }
-        g.setColor(new Color(242, 236, 208));
+        g.setColor(new Color(87, 84, 74));
         if (!isAnimatingMoney) {
             Font anotherNewFont = font.deriveFont(Font.PLAIN, 20f);
             g.setFont(anotherNewFont);
@@ -1099,11 +1103,125 @@ public class Game extends JPanel implements
                 uiImages[9], x + 175, 360, 
                 buttonDimensions[0], buttonDimensions[1], this
             );
-            g.setColor(new Color(242, 236, 208));
+            g.setColor(new Color(87, 84, 74));
             g.drawString("Next Day", x + 25, 396);
             g.drawString("Back", x + 200, 396);
         }
+        g.setColor(new Color(242, 236, 208));
         g.setFont(font);
+    }
+
+    public void drawTitle(Graphics g) {
+        g.drawImage(uiImages[11], 0, 0, this);
+        int[] buttonDimensions = getImageDim(uiImages[6], 5);
+        g.drawImage(
+            uiImages[6], 264, 
+            350, buttonDimensions[0], buttonDimensions[1], this
+        );
+        Font newFont = font.deriveFont(Font.PLAIN, 40f);
+        g.setFont(newFont);
+        g.drawString("PLAY!!", 329, 430);
+        int[] otherButtonDim = getImageDim(uiImages[9], 3);
+        g.drawImage(
+            uiImages[9], 100, 376, otherButtonDim[0], otherButtonDim[1], this
+        );
+        Font otherFont = font.deriveFont(Font.PLAIN, 16f);
+        g.setFont(otherFont);
+        g.drawString("Credits", 140, 420);
+        g.drawImage(
+            uiImages[9], SCREEN_WIDTH - 100 - otherButtonDim[0], 376, 
+            otherButtonDim[0], otherButtonDim[1], this
+        );
+        g.drawString("Instructions", 542, 420);
+        g.setColor(new Color(242, 236, 208));
+        g.setFont(font);
+    }
+
+    public void drawCredits(Graphics g) {
+        g.drawImage(uiImages[10], 0, 0, this);
+        Font titleFont = font.deriveFont(Font.PLAIN, 40f);
+        g.setFont(titleFont);
+        g.setColor(new Color(87, 84, 74));
+        g.drawString("Credits:", 290, 170);
+        Font newFont = font.deriveFont(Font.PLAIN, 24f);
+        g.setFont(newFont);
+        int x = 150;
+        g.drawString("Art: Kemni on itch.io and me", x, 220);
+        g.drawString("Music: Pixabay and Concerned Ape", x, 260);
+        g.drawString("Everything else: me", x, 300);
+    }
+
+    public void drawInstructionImage(Graphics g, Image image) {
+        int[] imageDimensions = getImageDim(image, 0.25);
+        int x = SCREEN_WIDTH / 2 - imageDimensions[0] / 2;
+        g.drawImage(image, x, 200, imageDimensions[0], imageDimensions[1], this);
+    }
+
+    public void drawInstructions(Graphics g) {
+        int x = 130;
+        int titleY = 170;
+        int[] y = {330, 350, 370, 390, 410, 430, 450};
+        Font titleFont = font.deriveFont(Font.PLAIN, 40f);
+        Font newFont = font.deriveFont(Font.PLAIN, 16f);
+        g.setFont(titleFont);
+        g.setColor(new Color(87, 84, 74));
+        g.drawImage(uiImages[10], 0, 0, this);
+        if (instructionPage == 0) {
+            g.drawString("Controls:", x, titleY);
+            g.setFont(newFont);
+            drawInstructionImage(g, uiImages[12]);
+            g.drawString("Movement: WASD", x, y[0]);
+            g.drawString("Inventory: E", x, y[1]);
+            g.drawString("Everything else: Mouse", x, y[2]);
+            g.drawString("You are able to click escape to leave certain states (like ", x, y[3]);
+            g.drawString("this one!)", x, y[4]);
+            g.drawString("(Press left or right arrow keys to switch pages)", x, y[6]);
+        } else if (instructionPage == 1) {
+            g.drawString("Farming (page 1):", x, titleY);
+            g.setFont(newFont);
+            drawInstructionImage(g, uiImages[13]);
+            g.drawString("The main goal of the game is to get as much money as possible!", x, y[0]);
+            g.drawString("You mainly earn money through farming crops, which sell for", x, y[1]);
+            g.drawString("money. Different crops sell for more or less, and some have", x, y[2]);
+            g.drawString("different mechanisms. It takes a certain amount of days for a", x, y[3]);
+            g.drawString("crop to finish growing, and then you are able to sell them.", x, y[4]);
+        } else if (instructionPage == 2) {
+            g.drawString("Farming (page 2):", x, titleY);
+            g.setFont(newFont);
+            drawInstructionImage(g, uiImages[14]);
+            g.drawString("You first have to find a tile of farmable land (light brown),", x, y[0]);
+            g.drawString("and use your hoe to create a tile that allows crops to be", x, y[1]);
+            g.drawString("placed on (left click). Then, you can hold a seed, and click", x, y[2]);
+            g.drawString("to place it down. After the seed has been placed, it has to", x, y[3]);
+            g.drawString("be watered for it to grow (also left click). Aftering ", x, y[4]);
+            g.drawString("watering the plant, it will grow on the next day.", x, y[5]);
+        } else if (instructionPage == 3) {
+            g.drawString("Day system (page 3):", x, titleY);
+            g.setFont(newFont);
+            drawInstructionImage(g, uiImages[15]);
+            g.drawString("The day is seperated by days; you start on day 1, and then", x, y[0]);
+            g.drawString("go onto the next day when you either go to your bed or pass", x, y[1]);
+            g.drawString("out at midnight. After it is a new day, your progress is", x, y[2]);
+            g.drawString("saved. There are also stuff that happens: the crops grow,", x, y[3]);
+            g.drawString("the store restocks, and you earn your money.", x, y[4]);
+        } else if (instructionPage == 4) {
+            g.drawString("Store (page 4):", x, titleY);
+            g.setFont(newFont);
+            drawInstructionImage(g, uiImages[16]);
+            g.drawString("The store sells the items that you might need. The first", x, y[0]);
+            g.drawString("2 rows sell seeds; the other ones sell tools. Every seed", x, y[1]);
+            g.drawString("can be bought 10 times every day, and each tool can only", x, y[2]);
+            g.drawString("be bought once. The hoe and watering can increases the amount", x, y[3]);
+            g.drawString("of tiles affected.", x, y[4]);
+        } else if (instructionPage == 5) {
+            g.drawString("Sell (page 5):", x, titleY);
+            g.setFont(newFont);
+            drawInstructionImage(g, uiImages[17]);
+            g.drawString("You are able to go up to this person in order to sell your", x, y[0]);
+            g.drawString("crops by clicking the items in your inventory. At the end", x, y[1]);
+            g.drawString("of the day, the total amount of money you've earned will be", x, y[2]);
+            g.drawString("added up.", x, y[3]);
+        }
     }
 
     // clicking related
@@ -1328,13 +1446,14 @@ public class Game extends JPanel implements
     }
 
     public void resetDay() {
+        days += 1;
         try {
             saveFilesNextDay();
+            System.out.println("save files!!!");
         } catch (IOException e) {
 
         }
         earned = 0;
-        days += 1;
         up = false;
         down = false;
         left = false;
@@ -1358,6 +1477,8 @@ public class Game extends JPanel implements
         duration = 30;
         displayedMoney = 0;
         isAnimatingMoney = false;
+        isInstructionsOpen = false;
+        isCreditsOpen = false;
         int[][] defaultStore = getDefaultStore();
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 6; j++) {
@@ -1500,6 +1621,8 @@ public class Game extends JPanel implements
         saveFile(objectFile, objectsMap);
         saveFile(storeFile, storeItems);
         saveFile(cropFile, cropDaysMap);
+
+        System.out.println("done saving files!!!");
     }
 
     // initializing the game
@@ -1575,18 +1698,18 @@ public class Game extends JPanel implements
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, 32, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 19, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 19, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 32, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 18, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -1620,7 +1743,7 @@ public class Game extends JPanel implements
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
-        };
+            };
         return map;
     }
 
@@ -2018,6 +2141,13 @@ public class Game extends JPanel implements
             drawEnd(g);
             cameraLocation.setText("");
             playerLocation.setText("");
+        } else if (state.equals("title")) {
+            drawTitle(g);
+            if (isCreditsOpen) {
+                drawCredits(g);
+            } else if (isInstructionsOpen) {
+                drawInstructions(g);
+            }
         }
     }
 
@@ -2176,14 +2306,36 @@ public class Game extends JPanel implements
                 actualX >= 150 && actualX <= 150 + buttonDimensions[0] &&
                 actualY >= 360 && actualY <= 360 + buttonDimensions[1]
             ) {
-                state = "house";
                 resetDay();
+                state = "house";
             } else if (
                 actualX >= 325 && actualX <= 325 + buttonDimensions[0] &&
                 actualY >= 360 && actualY <= 360 + buttonDimensions[1]
             ) {
-                state = "title";
                 resetDay();
+                state = "title";
+            }
+        } else if (state.equals("title")) {
+            int[] buttonDimensions = getImageDim(uiImages[6], 5);
+            int[] otherButtonDim = getImageDim(uiImages[9], 3);
+            if (
+                actualX >= 264 && actualX <= 264 + buttonDimensions[0] && 
+                actualY >= 350 && actualY <= 350 + buttonDimensions[1]
+            ) {
+                System.out.println("play button");
+                state = "house";
+            } else if (
+                actualX >= 100 && actualX <= 100 + otherButtonDim[0] &&
+                actualY >= 376 && actualY <= 376 + otherButtonDim[1]
+            ) {
+                System.out.println("credits");
+                isCreditsOpen = true;
+            } else if (
+                actualX >= 524 && actualX <= 524 + otherButtonDim[0] &&
+                actualY >= 376 && actualY <= 376 + otherButtonDim[1]
+            ) {
+                System.out.println("instructions");
+                isInstructionsOpen = true;
             }
         }
     }
@@ -2326,6 +2478,24 @@ public class Game extends JPanel implements
                 calculateEarnedMoney();
             } else if (state.equals("end")) {
                 state = "title";
+            } else if (state.equals("title")) {
+                if (isCreditsOpen) {
+                    isCreditsOpen = false;
+                } else if (isInstructionsOpen) {
+                    instructionPage = 0;
+                    isInstructionsOpen = false;
+                }
+            }
+        }
+        if (state.equals("title")) {
+            if (key == KeyEvent.VK_LEFT || key == KeyEvent.VK_A) { 
+                if (instructionPage >= 1) {
+                    instructionPage -= 1;
+                }
+            } else if (key == KeyEvent.VK_RIGHT || key == KeyEvent.VK_D) {
+                if (instructionPage < 5) {
+                    instructionPage += 1;
+                }
             }
         }
     }
