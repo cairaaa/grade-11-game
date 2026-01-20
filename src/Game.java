@@ -10,24 +10,32 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 
+/*
+    Mindy Situ - 2026/20/01
+    Culminating Game
+
+    This is my culminating game, which is a variation of the game Stardew Valley.
+    The main goal of the game is to farm crops, and earn money! There is also a day
+    system, a shop, and a place to sell your crops. It is a super relaxing game :)
+*/
+
 public class Game extends JPanel implements 
     ActionListener,
     MouseListener, 
     MouseMotionListener,
     KeyListener, 
     Runnable {
+    // ***Global variables***
     // constants
     final int TILE_LENGTH = 64;
     final int FPS = 30;
     final int SCREEN_WIDTH = 12 * TILE_LENGTH;
     final int SCREEN_HEIGHT = 9 * TILE_LENGTH;
 
-    // global variables
+    // general
     Thread thread;
     boolean initialized;
     static boolean wait;
-
-    // general
     Font font;
     Clip[] audioClips;
     int currentAudio;
@@ -116,7 +124,7 @@ public class Game extends JPanel implements
     JLabel cameraLocation;
     JLabel playerLocation;
 
-    // constructor
+    // ***Constructor***
     public Game() throws IOException, FontFormatException {
         setBackground(Color.BLACK);
         setPreferredSize(
@@ -148,7 +156,7 @@ public class Game extends JPanel implements
 		thread.start();
     }
 
-    // helper functions
+    // ***Helper methods***
     public int[] getTileParts(int num) {
         int[] array = {num / 16, num % 16};
         return array;
@@ -349,7 +357,6 @@ public class Game extends JPanel implements
             itemInfo[11][4] = "1500";
             itemInfo[11][5] = "2500";
         } else if (num == 12) {
-            // fix all of this laters
             itemInfo[12][0] = "Hoe Upgrade 1";
             itemInfo[12][1] = "34";
             itemInfo[12][2] = (
@@ -424,7 +431,7 @@ public class Game extends JPanel implements
         return array;
     }
 
-    // sound stuff
+    // ***Sound related methods***
     public void loadAudio() {
         try {
             currentAudio = -1;
@@ -504,7 +511,7 @@ public class Game extends JPanel implements
         clip.start();
     }
 
-    // updating arrays
+    // ***Updating/changing arrays***
     public boolean isFarmland(int value) {
         return value >= 0 && value < 16;
     }
@@ -741,7 +748,6 @@ public class Game extends JPanel implements
     }
 
     public void updateCropGrowth() {
-        // keep track of the mechanisms each plant has
         for (int row = 0; row < wetTilesMap.length; row++) {
             for (int col = 0; col < wetTilesMap[0].length; col++) {
                 if (wetTilesMap[row][col] < 0) {
@@ -765,7 +771,6 @@ public class Game extends JPanel implements
                 }
                 double random = Math.random();
                 if (cropType == 18) {
-                    // 75% chance 2 days 25% chance 3 days
                     if (day == 0) {
                         if (random < 0.75) {
                             day = 2;
@@ -776,7 +781,6 @@ public class Game extends JPanel implements
                         day += 1;
                     }
                 } else if (cropType == 19) {
-                    // 50% chance 2 days 50% chance 3 days
                     if (day == 0) {
                         if (random < 0.5) {
                             day = 2;
@@ -835,7 +839,13 @@ public class Game extends JPanel implements
         System.out.println("item thing id idk: " + item);
         calculateNextSlot(inventory, item, new int[]{2, 0, 1});
         objectsMap[realRow][col] = -1;
-        cropDaysMap[row][col] = -1;
+        if (cropInfo[0] != 25) {
+            cropDaysMap[row][col] = -1;
+            objectsMap[realRow][col] = -1;
+        } else {
+            cropDaysMap[row][col] = 0;
+            objectsMap[realRow][col] = 2500;
+        }
     }
 
     public void updateHitboxes(int col, int row, int width, int height) {
@@ -849,7 +859,7 @@ public class Game extends JPanel implements
         }
     }
 
-    // drawing stuff
+    // ***Drawing methods***
     public void drawPlayer(Graphics g, int index, boolean isGame) {
         int frameToDraw;
   
@@ -1082,6 +1092,9 @@ public class Game extends JPanel implements
             drawY[i] = startY + i * 20 * scalar;
         }
         drawItems(g, storeItems, drawX, drawY, 3);
+        g.setColor(Color.YELLOW);
+        g.drawString("Money: $" + money, 50, 67);
+        g.setColor(new Color(242, 236, 208));
         if (storeSelected != -1) {
             Font fontTitle = font.deriveFont(Font.PLAIN, 24f);
             g.setFont(fontTitle);
@@ -1229,13 +1242,17 @@ public class Game extends JPanel implements
         g.setFont(titleFont);
         g.setColor(new Color(87, 84, 74));
         g.drawString("Credits:", 290, 170);
-        Font newFont = font.deriveFont(Font.PLAIN, 24f);
+        g.drawString("About me:", 270, 340);
+        Font newFont = font.deriveFont(Font.PLAIN, 20f);
         g.setFont(newFont);
         int x = 150;
-        g.drawString("Art: Kemni on itch.io and me", x, 220);
-        g.drawString("Music: Pixabay, Concerned Ape, and C418", x, 260);
-        g.drawString("Font: Stefie Justprince on Google Fonts", x, 300);
-        g.drawString("Everything else: me", x, 340);
+        g.drawString("Art: Kemni on itch.io and me", x, 200);
+        g.drawString("Music: Pixabay, Concerned Ape, and C418", x, 230);
+        g.drawString("Font: Stefie Justprince on Google Fonts", x, 260);
+        g.drawString("Everything else: me", x, 290);
+        g.drawString("Mindy Situ, a grade 11 student :D", x, 370);
+        g.drawString("January 21, 2026", x, 400);
+        g.setFont(font);
     }
 
     public void drawInstructionImage(Graphics g, Image image) {
@@ -1254,7 +1271,7 @@ public class Game extends JPanel implements
         g.setColor(new Color(87, 84, 74));
         g.drawImage(uiImages[10], 0, 0, this);
         if (instructionPage == 0) {
-            g.drawString("Controls:", x, titleY);
+            g.drawString("Controls (page 1):", x, titleY);
             g.setFont(newFont);
             drawInstructionImage(g, uiImages[12]);
             g.drawString("Movement: WASD", x, y[0]);
@@ -1264,7 +1281,7 @@ public class Game extends JPanel implements
             g.drawString("this one!)", x, y[4]);
             g.drawString("(Press left or right arrow keys to switch pages)", x, y[6]);
         } else if (instructionPage == 1) {
-            g.drawString("Farming (page 1):", x, titleY);
+            g.drawString("Farming (page 2):", x, titleY);
             g.setFont(newFont);
             drawInstructionImage(g, uiImages[13]);
             g.drawString("The main goal of the game is to get as much money as possible!", x, y[0]);
@@ -1273,7 +1290,7 @@ public class Game extends JPanel implements
             g.drawString("different mechanisms. It takes a certain amount of days for a", x, y[3]);
             g.drawString("crop to finish growing, and then you are able to sell them.", x, y[4]);
         } else if (instructionPage == 2) {
-            g.drawString("Farming (page 2):", x, titleY);
+            g.drawString("Farming (page 3):", x, titleY);
             g.setFont(newFont);
             drawInstructionImage(g, uiImages[14]);
             g.drawString("You first have to find a tile of farmable land (light brown),", x, y[0]);
@@ -1283,7 +1300,7 @@ public class Game extends JPanel implements
             g.drawString("be watered for it to grow (also left click). Aftering ", x, y[4]);
             g.drawString("watering the plant, it will grow on the next day.", x, y[5]);
         } else if (instructionPage == 3) {
-            g.drawString("Day system (page 3):", x, titleY);
+            g.drawString("Day system (page 4):", x, titleY);
             g.setFont(newFont);
             drawInstructionImage(g, uiImages[15]);
             g.drawString("The day is seperated by days; you start on day 1, and then", x, y[0]);
@@ -1292,7 +1309,7 @@ public class Game extends JPanel implements
             g.drawString("saved. There are also stuff that happens: the crops grow,", x, y[3]);
             g.drawString("the store restocks, and you earn your money.", x, y[4]);
         } else if (instructionPage == 4) {
-            g.drawString("Store (page 4):", x, titleY);
+            g.drawString("Store (page 5):", x, titleY);
             g.setFont(newFont);
             drawInstructionImage(g, uiImages[16]);
             g.drawString("The store sells the items that you might need. The first", x, y[0]);
@@ -1301,7 +1318,7 @@ public class Game extends JPanel implements
             g.drawString("be bought once. The hoe and watering can increases the amount", x, y[3]);
             g.drawString("of tiles affected.", x, y[4]);
         } else if (instructionPage == 5) {
-            g.drawString("Sell (page 5):", x, titleY);
+            g.drawString("Sell (page 6):", x, titleY);
             g.setFont(newFont);
             drawInstructionImage(g, uiImages[17]);
             g.drawString("You are able to go up to this person in order to sell your", x, y[0]);
@@ -1309,9 +1326,10 @@ public class Game extends JPanel implements
             g.drawString("of the day, the total amount of money you've earned will be", x, y[2]);
             g.drawString("added up.", x, y[3]);
         }
+        g.setFont(font);
     }
 
-    // clicking related
+    // ***Clicking methods***
     public int getTileClicked(
         int clickX, 
         int clickY, 
@@ -1336,7 +1354,7 @@ public class Game extends JPanel implements
         return slot;
     }
 
-    // movement/keyboard related
+    // ***Movement/keyboard methods***
     public void move() {
         int nextCameraX = cameraX;
         if (left) {
@@ -1383,27 +1401,49 @@ public class Game extends JPanel implements
     }
 
     public void moveStationaryCamera() {
+        int nextCameraX = houseX;
         if (left) {
-            houseX -= speed;
-            lastDirection = "left";
+            nextCameraX -= speed;
         } else if (right) {
-            houseX += speed;
-            lastDirection = "right";
+            nextCameraX += speed;
+        }
+        int nextTileX = nextCameraX / TILE_LENGTH;
+        if (
+            nextTileX >= 1 &&
+            nextTileX < houseTiles[0].length - 4
+        ) {
+            houseX = nextCameraX;
         }
 
+        int nextCameraY = houseY;
         if (up) {
-            houseY -= speed;
-            lastDirection = "up";
+            nextCameraY -= speed;
         } else if (down) {
-            houseY += speed;
-            lastDirection = "down";
+            nextCameraY += speed;
+        }
+        int nextTileY = nextCameraY / TILE_LENGTH;
+        if (
+            nextTileY >= 2 &&
+            nextTileY < houseTiles.length - 2
+        ) {
+            houseY = nextCameraY;
         }
 
         playerTileX = houseX / TILE_LENGTH;
         playerTileY = houseY / TILE_LENGTH;
+
+        if (up) {
+            lastDirection = "up";
+        } else if (down) {
+            lastDirection = "down";
+        } else if (left) {
+            lastDirection = "left";
+        } else if (right) {
+            lastDirection = "right";
+        }
     }
 
-    // animation
+    // ***Animation methods***
     public void animatePlayer() {
         if (up || down || left || right) {
             movementAnimationCounter++;
@@ -1474,7 +1514,7 @@ public class Game extends JPanel implements
         }
     }
 
-    // state related
+    // ***State related methods***
     public void checkState() {
         if (state.equals("game")) {
             if (playerTileY != 18 || playerTileX < 20 || playerTileX > 22) {
@@ -1504,7 +1544,6 @@ public class Game extends JPanel implements
                 state = "end";
                 playNewAudio(2);
                 startMoneyAnimation();
-                // call function to reset everything
             }
         }
     }
@@ -1535,6 +1574,35 @@ public class Game extends JPanel implements
     }
 
     public void resetDay() {
+        int[][] defaultStore = getDefaultStore();
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 6; j++) {
+                storeItems[i][j] = defaultStore[i][j];
+            }
+        }
+        for (int i = 0; i < map.length; i++) {
+            for (int j = 0; j < map[0].length; j++) {
+                if (map[i][j] >= 0 && map[i][j] <= 15) {
+                    if (wetTilesMap[i][j] == -1 && objectsMap[i - 1][j] == -1) {
+                        map[i][j] = 32;
+                        if (i > 0) {
+                            updateTileMask(j, i - 1);
+                        }
+                        if (j < map[0].length - 1) {
+                            updateTileMask(j + 1, i);
+                        }
+                        if (i < map.length - 1) {
+                            updateTileMask(j, i + 1);
+                        }
+                        if (j > 0) {
+                            updateTileMask(j - 1, i);
+                        }
+                    }
+                }
+            }
+        }
+        updateCropGrowth();
+        resetArray(wetTilesMap);
         days += 1;
         try {
             saveFilesNextDay();
@@ -1568,38 +1636,9 @@ public class Game extends JPanel implements
         isAnimatingMoney = false;
         isInstructionsOpen = false;
         isCreditsOpen = false;
-        int[][] defaultStore = getDefaultStore();
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 6; j++) {
-                storeItems[i][j] = defaultStore[i][j];
-            }
-        }
-        for (int i = 0; i < map.length; i++) {
-            for (int j = 0; j < map[0].length; j++) {
-                if (map[i][j] >= 0 && map[i][j] <= 15) {
-                    if (wetTilesMap[i][j] == -1 && objectsMap[i - 1][j] == -1) {
-                        map[i][j] = 32;
-                        if (i > 0) {
-                            updateTileMask(j, i - 1);
-                        }
-                        if (j < map[0].length - 1) {
-                            updateTileMask(j + 1, i);
-                        }
-                        if (i < map.length - 1) {
-                            updateTileMask(j, i + 1);
-                        }
-                        if (j > 0) {
-                            updateTileMask(j - 1, i);
-                        }
-                    }
-                }
-            }
-        }
-        updateCropGrowth();
-        resetArray(wetTilesMap);
     }
 
-    // calcuations
+    // ***Methods for calculating***
     public int[] calculateNextSlot(int[][] values, int item, int[] rowOrder) {
         for (int row = 0; row < values.length; row++) {
             int realRow = rowOrder[row];
@@ -1684,7 +1723,7 @@ public class Game extends JPanel implements
         resetArray(sellInventory);
     }
 
-    // saving
+    // ***Saving files methods***
     public void saveFile(File file, int[][] values) throws IOException {
         PrintWriter out = new PrintWriter(file);
         for (int i = 0; i < values.length; i++) {
@@ -1714,9 +1753,8 @@ public class Game extends JPanel implements
         System.out.println("done saving files!!!");
     }
 
-    // initializing the game
+    // ***Initializing methods***
     public int[][] getDefaultMap() {
-        // change this later
         int[][] map = {
             {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48},
             {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48},
@@ -1738,19 +1776,19 @@ public class Game extends JPanel implements
             {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 17, 18, 18, 19, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
             {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 20, 33, 33, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
             {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 20, 33, 33, 27, 18, 18, 18, 18, 18, 18, 18, 19, 16, 16, 16, 16, 16, 16, 17, 18, 18, 19, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
-            {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 20, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 27, 19, 16, 16, 16, 16, 16, 20, 33, 33, 21, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
-            {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 22, 23, 23, 23, 23, 23, 23, 26, 33, 33, 33, 33, 27, 18, 18, 19, 16, 16, 20, 33, 33, 27, 19, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
-            {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 22, 23, 26, 33, 33, 33, 33, 33, 27, 18, 18, 28, 33, 33, 33, 21, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
+            {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 20, 33, 33, 33, 33, 35, 33, 33, 33, 33, 33, 27, 19, 16, 16, 16, 16, 16, 20, 33, 33, 21, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
+            {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 22, 23, 23, 23, 23, 23, 23, 26, 33, 33, 33, 33, 27, 18, 18, 19, 16, 16, 20, 35, 33, 27, 19, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
+            {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 22, 23, 26, 33, 34, 33, 33, 33, 27, 18, 18, 28, 33, 33, 33, 21, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
             {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 22, 23, 26, 33, 33, 33, 33, 33, 33, 33, 25, 23, 23, 24, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
             {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 22, 23, 23, 23, 26, 33, 33, 25, 24, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
             {48, 48, 48, 48, 48, 48, 48, 53, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 20, 33, 33, 27, 19, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
             {48, 48, 48, 48, 48, 48, 48, 53, 16, 17, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 19, 16, 22, 26, 33, 33, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
-            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 16, 20, 33, 33, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
-            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 16, 22, 23, 23, 24, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
-            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
-            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
-            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
-            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
+            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 16, 20, 33, 36, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
+            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 17, 28, 33, 33, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
+            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 27, 18, 28, 33, 33, 25, 24, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
+            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 33, 33, 33, 33, 25, 24, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
+            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 33, 34, 33, 25, 24, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
+            {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 25, 23, 23, 24, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
             {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
             {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
             {48, 48, 48, 48, 48, 48, 48, 53, 16, 20, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 21, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 52, 48, 48, 48, 48, 48, 48, 48},
@@ -1776,8 +1814,6 @@ public class Game extends JPanel implements
     }
 
     public int[][] getDefaultObjectMap() {
-        // probably change this later, too many -1s, 
-        // iterate over a list of just objects instead?
         int[][] map = {
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -1786,44 +1822,44 @@ public class Game extends JPanel implements
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, 32, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 32, -1, -1, 17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 19, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 32, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 6, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 6, -1, -1, -1, -1, -1, -1, -1, -1, 5, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 18, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -1934,7 +1970,6 @@ public class Game extends JPanel implements
             offScreenImage = createImage(SCREEN_WIDTH, SCREEN_HEIGHT);
             offScreenBuffer = offScreenImage.getGraphics();
             offScreenBuffer.setFont(font);
-            // set colour here if needed
         }
         offScreenBuffer.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -2242,7 +2277,7 @@ public class Game extends JPanel implements
         }
     }
 
-    // mouse related methods
+    // ***Mouse Events***
     @Override
     public void mousePressed(MouseEvent e) {
         int actualX = e.getX();
@@ -2529,7 +2564,7 @@ public class Game extends JPanel implements
 
     }
 
-    // key related methods
+    // ***Key Events***
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
@@ -2619,6 +2654,7 @@ public class Game extends JPanel implements
 
     }
 
+    // ***Other main stuff idk***
     @Override
     public void actionPerformed(ActionEvent e) {
 
