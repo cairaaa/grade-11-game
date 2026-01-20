@@ -1234,7 +1234,8 @@ public class Game extends JPanel implements
         int x = 150;
         g.drawString("Art: Kemni on itch.io and me", x, 220);
         g.drawString("Music: Pixabay, Concerned Ape, and C418", x, 260);
-        g.drawString("Everything else: me", x, 300);
+        g.drawString("Font: Stefie Justprince on Google Fonts", x, 300);
+        g.drawString("Everything else: me", x, 340);
     }
 
     public void drawInstructionImage(Graphics g, Image image) {
