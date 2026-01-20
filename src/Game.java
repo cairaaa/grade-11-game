@@ -6,6 +6,9 @@ import javax.swing.*;
 
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 
 public class Game extends JPanel implements 
     ActionListener,
@@ -26,6 +29,8 @@ public class Game extends JPanel implements
 
     // general
     Font font;
+    Clip[] audioClips;
+    int currentAudio;
     int money;
     int earned;
     int days;
@@ -419,6 +424,86 @@ public class Game extends JPanel implements
         return array;
     }
 
+    // sound stuff
+    public void loadAudio() {
+        try {
+            currentAudio = -1;
+            audioClips = new Clip[10];
+
+            AudioInputStream titleStream = AudioSystem.getAudioInputStream(
+                new File("assets/audio/title.wav")
+            );
+            audioClips[0] = AudioSystem.getClip();
+            audioClips[0].open(titleStream);
+
+            AudioInputStream mainStream = AudioSystem.getAudioInputStream(
+                new File("assets/audio/main.wav")
+            );
+            audioClips[1] = AudioSystem.getClip();
+            audioClips[1].open(mainStream);
+
+            AudioInputStream endStream = AudioSystem.getAudioInputStream(
+                new File("assets/audio/end.wav")
+            );
+            audioClips[2] = AudioSystem.getClip();
+            audioClips[2].open(endStream);
+
+            AudioInputStream hoeSoundEffectStream = AudioSystem.getAudioInputStream(
+                new File("assets/audio/hoe.wav")
+            );
+            audioClips[3] = AudioSystem.getClip();
+            audioClips[3].open(hoeSoundEffectStream);
+
+            AudioInputStream waterSoundEffectStream = AudioSystem.getAudioInputStream(
+                new File("assets/audio/water.wav")
+            );
+            audioClips[4] = AudioSystem.getClip();
+            audioClips[4].open(waterSoundEffectStream);
+
+            AudioInputStream placeSoundEffectStream = AudioSystem.getAudioInputStream(
+                new File("assets/audio/leafrustle.wav")
+            );
+            audioClips[5] = AudioSystem.getClip();
+            audioClips[5].open(placeSoundEffectStream);
+
+            AudioInputStream harvestSoundEffectStream = AudioSystem.getAudioInputStream(
+                new File("assets/audio/harvest.wav")
+            );
+            audioClips[6] = AudioSystem.getClip();
+            audioClips[6].open(harvestSoundEffectStream);
+
+            AudioInputStream buySoundEffectStream = AudioSystem.getAudioInputStream(
+                new File("assets/audio/coins.wav")
+            );
+            audioClips[7] = AudioSystem.getClip();
+            audioClips[7].open(buySoundEffectStream);
+        } catch (Exception e) {
+
+        }
+    }
+
+    public void playNewAudio(int index) {
+        if (index == currentAudio) {
+            System.out.println(currentAudio);
+            return;
+        }
+        if (currentAudio != -1) {
+            audioClips[currentAudio].stop();
+        }
+        currentAudio = index;
+        audioClips[currentAudio].setFramePosition(0);
+        audioClips[currentAudio].loop(Clip.LOOP_CONTINUOUSLY);
+    }
+
+    public void playSoundEffect(int index) {
+        Clip clip = audioClips[index];
+        if (clip.isRunning()) {
+            clip.stop();
+        }
+        clip.setFramePosition(0);
+        clip.start();
+    }
+
     // updating arrays
     public boolean isFarmland(int value) {
         return value >= 0 && value < 16;
@@ -630,6 +715,7 @@ public class Game extends JPanel implements
         }
         storeItems[row][col]--;
         money -= cost;
+        playSoundEffect(7);
 
         return true;
     }
@@ -1147,7 +1233,7 @@ public class Game extends JPanel implements
         g.setFont(newFont);
         int x = 150;
         g.drawString("Art: Kemni on itch.io and me", x, 220);
-        g.drawString("Music: Pixabay and Concerned Ape", x, 260);
+        g.drawString("Music: Pixabay, Concerned Ape, and C418", x, 260);
         g.drawString("Everything else: me", x, 300);
     }
 
@@ -1415,6 +1501,7 @@ public class Game extends JPanel implements
                 lastDirection = "down";
             } else if ((playerTileX == 1 || playerTileX == 2) && playerTileY == 2) {
                 state = "end";
+                playNewAudio(2);
                 startMoneyAnimation();
                 // call function to reset everything
             }
@@ -1430,6 +1517,7 @@ public class Game extends JPanel implements
                 if (secondsPassed >= 17 * 20) {
                     // calculate smth as the day is over
                     state = "end";
+                    playNewAudio(2);
                     startMoneyAnimation();
                     secondsPassed = 0;
                 }
@@ -2092,6 +2180,8 @@ public class Game extends JPanel implements
             uiImages = loadImages(new File("assets/ui"), false);
             stateImages = loadImages(new File("assets/state"), false);
 
+            loadAudio();
+            playNewAudio(0);
             hitboxes = getHitboxes();
         } catch (IOException e) {
 
@@ -2190,17 +2280,21 @@ public class Game extends JPanel implements
             );
             if (tileY > 0 && objectsMap[tileY - 1][tileX] % 100 == 3) {
                 System.out.println("crop can be picked up");
+                playSoundEffect(6);
                 updateCropHarvest(tileX, tileY);
             } else if (item == 32 || item == 34 || item == 35 || item == 36) {
                 System.out.println("hoe tool");
                 startActionAnimation("hoeing");
+                playSoundEffect(3);
                 updateTile(tileX, tileY, item);
             } else if (item == 33 || item == 37 || item == 38 || item == 39) {
                 System.out.println("water bucket");
                 startActionAnimation("watering");
+                playSoundEffect(4);
                 updateTile(tileX, tileY, item);
             } else if (item >= 16 && item <= 27) {
                 System.out.println("crop");
+                playSoundEffect(5);
                 updateCropPlaced(tileX, tileY);
             }
         } else if (state.equals("inv")) {
@@ -2248,6 +2342,7 @@ public class Game extends JPanel implements
                         if (coords[0] != -1) {
                             inventory[row][col] = -1;
                         }
+                        playSoundEffect(7);
                     }
                 }
             }
@@ -2308,12 +2403,14 @@ public class Game extends JPanel implements
             ) {
                 resetDay();
                 state = "house";
+                playNewAudio(1);
             } else if (
                 actualX >= 325 && actualX <= 325 + buttonDimensions[0] &&
                 actualY >= 360 && actualY <= 360 + buttonDimensions[1]
             ) {
                 resetDay();
                 state = "title";
+                playNewAudio(0);
             }
         } else if (state.equals("title")) {
             int[] buttonDimensions = getImageDim(uiImages[6], 5);
@@ -2324,6 +2421,7 @@ public class Game extends JPanel implements
             ) {
                 System.out.println("play button");
                 state = "house";
+                playNewAudio(1);
             } else if (
                 actualX >= 100 && actualX <= 100 + otherButtonDim[0] &&
                 actualY >= 376 && actualY <= 376 + otherButtonDim[1]
@@ -2478,6 +2576,7 @@ public class Game extends JPanel implements
                 calculateEarnedMoney();
             } else if (state.equals("end")) {
                 state = "title";
+                playNewAudio(0);
             } else if (state.equals("title")) {
                 if (isCreditsOpen) {
                     isCreditsOpen = false;
