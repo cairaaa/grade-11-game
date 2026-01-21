@@ -61,7 +61,6 @@ public class Game extends JPanel implements
     BufferedImage[][] cropImages = new BufferedImage[12][4];
     BufferedImage[] playerImages;
     BufferedImage[] uiImages;
-    BufferedImage[] stateImages;
 
     Image offScreenImage;
     Graphics offScreenBuffer;
@@ -120,12 +119,9 @@ public class Game extends JPanel implements
     int displayedMoney;
     boolean isAnimatingMoney;
 
-    // remove later
-    JLabel cameraLocation;
-    JLabel playerLocation;
-
     // ***Constructor***
     public Game() throws IOException, FontFormatException {
+        // initializing stuff
         setBackground(Color.BLACK);
         setPreferredSize(
             new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -136,6 +132,7 @@ public class Game extends JPanel implements
         addKeyListener(this);
         setFocusable(true);
 
+        // font
         font = Font.createFont(
             Font.TRUETYPE_FONT, new File("assets/font/PixelifySans-Regular.ttf")
         );
@@ -143,35 +140,48 @@ public class Game extends JPanel implements
         ge.registerFont(font);
         font = font.deriveFont(Font.PLAIN, 20f);
 
-        // remove this later
-        cameraLocation = new JLabel("camera: " + cameraX + " " + cameraY);
-        cameraLocation.setFont(font);
-        add(cameraLocation);
-        
-        playerLocation = new JLabel("player: " + playerTileX + " " + playerTileY);
-        playerLocation.setFont(font);
-        add(playerLocation);
-
+        // thread
         thread = new Thread(this);
 		thread.start();
     }
 
     // ***Helper methods***
+    /* 
+        This function returns the index of where the image would be depending on the
+        the number given. The parameter is the number/id of the image (int), and it 
+        returns the 2 numbers representing the index
+    */
     public int[] getTileParts(int num) {
         int[] array = {num / 16, num % 16};
         return array;
     }
 
+    /*
+        This function finds info related to an item, returning the id in the first
+        index, and the count in the second. The parameter requires an int representing
+        the number stored, and returns an int[] with length 2
+    */
     public int[] getItemInfo(int num) {
         int[] array = {num / 100, num % 100};
         return array;
     }
 
+    /*
+        This returns the row and column of a store item. It requires an int as the 
+        parameter being the number stored for the item, and returns an int[] of length 2
+    */
     public int[] getStoreItem(int num) {
         int[] array = {num / 6, num % 6};
         return array;
     }
 
+    /*
+        These are overloaded methods, which 1 of them has a scalar as a parameter.
+        It returns the dimensions (width & height) of the image. If there is a 
+        scalar, it will return the scaled width and height. The parameters are either 
+        the image, or the image and the scalar (double), and returns an int[] of length
+        2.
+    */
     public int[] getImageDim(Image image) {
         int[] imageDimensions = {
             (int) Math.floor(image.getWidth(this)), 
@@ -188,6 +198,11 @@ public class Game extends JPanel implements
         return imageDimensions;
     }
 
+    /*
+        This calculates the x and y values to draw items in the inventory. The
+        parameters is an int, for the y value to shift the numbers by. It returns
+        an int[][][], representing the row, column, and the x or y coordinate
+    */
     public int[][][] getInventorySlotPositions(int shift) {
         Image inventoryImage = uiImages[2];
         int[] imageDimensions = getImageDim(inventoryImage, 3);
@@ -212,6 +227,10 @@ public class Game extends JPanel implements
         return positions;
     }
 
+    /*
+        This makes every value in an array a value of -1. The parameters are an int[][]
+        representing the array to reset, and it doens't return anything.
+    */
     public void resetArray(int[][] array) {
         for (int i = 0; i < array.length; i++) {
             for (int j = 0; j < array[i].length; j++) {
@@ -220,22 +239,12 @@ public class Game extends JPanel implements
         }
     }
 
-    public void printArray(int[] array) {
-        for (int i = 0; i < array.length; i++) {
-            System.out.print(array[i] + " ");
-        }
-        System.out.println();
-    }
-
-    public void printArray(int[][] array) {
-        for (int i = 0; i < array.length; i++) {
-            for (int j = 0; j < array[i].length; j++) {
-                System.out.print(array[i][j] + " ");
-            }
-        }
-        System.out.println();
-    }
-
+    /*
+        This finds info based on the item. Index 0 is title, then id, description,
+        days it takes to grow, selling price, and then price. It takes a parameter
+        which is an int, representing which square it is in the shop, and returns
+        a String[] with all the info.
+    */
     public String[] getStoreItemInfo(int num) {
         String[][] itemInfo = new String[21][6];
         if (num == 0) {
@@ -420,6 +429,10 @@ public class Game extends JPanel implements
         return itemInfo[num];
     }
 
+    /*
+        This returns the sell prices for every item in the shop. There are no
+        parameters and returns an int[] with all the sell prices.
+    */
     public int[] getItemSellPrices() {
         int[] array = new int[28];
         for (int i = 0; i < 12; i++) {
@@ -432,6 +445,10 @@ public class Game extends JPanel implements
     }
 
     // ***Sound related methods***
+    /*
+        This loads all of the audio files into an array. There are no parameters
+        and doesn't return anything
+    */
     public void loadAudio() {
         try {
             currentAudio = -1;
@@ -489,9 +506,12 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This plays new background music whenever it is called. It requires an int
+        which is the index of the music, and doesn't return anything.
+    */
     public void playNewAudio(int index) {
         if (index == currentAudio) {
-            System.out.println(currentAudio);
             return;
         }
         if (currentAudio != -1) {
@@ -502,6 +522,10 @@ public class Game extends JPanel implements
         audioClips[currentAudio].loop(Clip.LOOP_CONTINUOUSLY);
     }
 
+    /*
+        This plays a sound effect when called. It requires the index of the sound
+        effect and doesn't return anything.
+    */
     public void playSoundEffect(int index) {
         Clip clip = audioClips[index];
         if (clip.isRunning()) {
@@ -512,10 +536,21 @@ public class Game extends JPanel implements
     }
 
     // ***Updating/changing arrays***
+    /*
+        This figures out if a tile is farmland or not. It requires the id of the tile,
+        and returns a boolean on whether it is farmland.
+    */
     public boolean isFarmland(int value) {
         return value >= 0 && value < 16;
     }
 
+    /*
+        This updates tiles depending on which tool the player used. The parameters are
+        the row, column and id of the item that the player was holding. If the player
+        was holding a hoe, it would update the tiles based on what type of hoe it was,
+        as certain tools are able to affect more tiles. It also works for watering cans
+        as well. It doesn't return anything
+    */
     public void updateTile(int col, int row, int itemId) {
         int[][] offsets;
         if (itemId == 32 || itemId == 33) {
@@ -537,7 +572,6 @@ public class Game extends JPanel implements
                 {-2, 2},  {-1, 2},  {0, 2},  {1, 2},  {2, 2}
             };
         } else {
-            System.out.println("eeeeeee");
             return;
         }
 
@@ -549,14 +583,12 @@ public class Game extends JPanel implements
                 targetRow < 0 || targetRow >= map.length || 
                 targetCol < 0 || targetCol >= map[0].length
             ) {
-                System.out.println("eee");
                 continue;
             }
 
             boolean isHoe = itemId == 32 || (itemId >= 34 && itemId <= 36);
             
             if (isHoe) {
-                System.out.println(i);
                 updateSingleTile(targetCol, targetRow);
             } else {
                 updateWateredTile(targetCol, targetRow);
@@ -564,6 +596,10 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This updates a single tile for the hoe. It requires the row and column, and
+        doesn't return anything.
+    */
     public void updateSingleTile(int col, int row) {
         int num = map[row][col];
         if (!isFarmland(num) && num != 32) {
@@ -585,10 +621,6 @@ public class Game extends JPanel implements
             }
             map[row][col] = mask;
         }
-        
-        System.out.println(
-            "update tile at (" + col + ", " + row + "): " + num + " to " + map[row][col]
-        );
 
         if (row > 0) {
             updateTileMask(col, row - 1);
@@ -604,6 +636,11 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This calculates the mask or id that the tile should be. It depends on the tiles
+        around it, and updates it accordingly. It requires the row and column and doesn't
+        return anything
+    */
     public void updateTileMask(int col, int row) {
         int num = map[row][col];
         
@@ -626,9 +663,13 @@ public class Game extends JPanel implements
         }
         
         map[row][col] = mask;
-        System.out.println("update edge to: " + map[row][col]);
     }
 
+    /*
+        This does the same thing as the method above, but it is for watering cans
+        instead of hoes. The parameters are the row and column of the tile, and 
+        doesn't return anything
+    */
     public void updateWateredTile(int col, int row) {
         int num = map[row][col];
         if (!isFarmland(num)) {
@@ -665,6 +706,10 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This does the same thing as updateTileMask() but it is for watering cans. It
+        needs the row and column, and doesn't return anything
+    */
     public void updateWateredTileMask(int col, int row) {
         if (wetTilesMap[row][col] == -1) {
             return;
@@ -687,6 +732,12 @@ public class Game extends JPanel implements
         wetTilesMap[row][col] = mask;
     }
 
+    /*
+        This is called whenever the player buys something. It removes the item
+        from the store, removes the player's money, and finds where it should be
+        in the inventory. It requires the row and column, and returns a boolean
+        on whether the item was successfully bought.
+    */
     public boolean updateBoughtItem(int col, int row) {
         int num = storeItems[row][col];
         int[] info = getItemInfo(num);
@@ -701,20 +752,11 @@ public class Game extends JPanel implements
         }
         int[] rowOrder = {2, 0, 1};
         if (itemId < 32) {
-            System.out.println("buy crop");
             int[] coordinates = calculateNextSlot(inventory, itemId * 100 + 1, rowOrder);
-            printArray(coordinates);
             if (coordinates[0] == -1 || coordinates[1] == -1) {
                 return false;
             }
         } else {
-            if (itemId >= 34 && itemId <= 36) {
-                System.out.println("buy hoe");
-            } else if (itemId >= 37 && itemId <= 39) {
-                System.out.println("buy watering can");
-            } else {
-                return false;
-            }
             int[] coordinates = calculateNextSlot(inventory, itemId * 100 + 1, rowOrder);
             if (coordinates[0] == -1 || coordinates[1] == -1) {
                 return false;
@@ -727,6 +769,11 @@ public class Game extends JPanel implements
         return true;
     }
 
+    /*
+        This is called whenever the player places down a crop, and updates the object
+        map to draw the crop. It requires the row and column, and doesn't return
+        anything.
+    */
     public void updateCropPlaced(int col, int row) {
         if (!isFarmland(map[row][col])) {
             return;
@@ -737,9 +784,6 @@ public class Game extends JPanel implements
         int item = getItemInfo(hotbar[hotbarSlot])[0];
         objectsMap[row - 1][col] = item * 100;
         cropDaysMap[row][col] = 0;
-        System.out.println(
-            "updated crops row " + row + " col " + col + " to " + cropDaysMap[row][col]
-        );
         if (hotbar[hotbarSlot] % 100 <= 1) {
             hotbar[hotbarSlot] = -1;
             return;
@@ -747,6 +791,10 @@ public class Game extends JPanel implements
         hotbar[hotbarSlot] -= 1;
     }
 
+    /*
+        This updates the crops and they grow if they have been watered. It is called at
+        the end of the day, and it doesn't have any parameters or return anything
+    */
     public void updateCropGrowth() {
         for (int row = 0; row < wetTilesMap.length; row++) {
             for (int col = 0; col < wetTilesMap[0].length; col++) {
@@ -763,7 +811,6 @@ public class Game extends JPanel implements
                 int[] cropInfo = getItemInfo(num);
                 int cropType = cropInfo[0];
                 int day = cropDaysMap[row][col];
-                System.out.println(num + " " + cropType);
                 String[] possibleDays = getStoreItemInfo(cropType - 16)[3].split("-");
                 int maxDays = Integer.parseInt(possibleDays[possibleDays.length - 1]);
                 if (day >= maxDays) {
@@ -807,15 +854,17 @@ public class Game extends JPanel implements
                 } else {
                     stage = (int) Math.floor((double) day / maxDays * 3);
                 }
-                System.out.println(
-                    cropType + " " + day + " " + row + " " + col + " " + stage + " " + maxDays
-                );
                 objectsMap[row - 1][col] = cropType * 100 + stage;
                 cropDaysMap[row][col] = day;
             }
         }
     }
 
+    /*
+        This is called when the player harvests a crop, and removes it from the object
+        map and adds it to the inventory. It requires the row and column, and doesn't
+        return anything.
+    */
     public void updateCropHarvest(int col, int row) {
         int realRow = row - 1;
         if (realRow < 0) {
@@ -836,7 +885,6 @@ public class Game extends JPanel implements
             amount = 1;
         }
         int item = cropInfo[0] * 100 - 1600 + amount;
-        System.out.println("item thing id idk: " + item);
         calculateNextSlot(inventory, item, new int[]{2, 0, 1});
         objectsMap[realRow][col] = -1;
         if (cropInfo[0] != 25) {
@@ -848,6 +896,11 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This updates the hitboxes for an item. It requires the row, column, width, and
+        height of the object, and it adds hitboxes so you can't touch the ibject. It 
+        doesn't return anything.
+    */
     public void updateHitboxes(int col, int row, int width, int height) {
         for (int y = row; y < row + height; y++) {
             for (int x = col; x < col + width; x++) {
@@ -860,6 +913,13 @@ public class Game extends JPanel implements
     }
 
     // ***Drawing methods***
+    /*
+        This draws the player and all the animations as well. It requires the graphics
+        object, the index of images to start at/to draw, and whether it is in the game
+        or house. If it is in the game, the player is always drawn in the center. If it
+        isn't, that means it is in the house, and isn't confined to the center. It
+        doesn't return anything.
+    */
     public void drawPlayer(Graphics g, int index, boolean isGame) {
         int frameToDraw;
   
@@ -908,6 +968,11 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This returns the coordinates of where the number for an item should be drawn.
+        It requires the x and y coordinate of where the item is drawn, and the scalar.
+        It requires an int[] of the x and y for the number coordinates.
+    */
     public int[] getNumberPos(int x, int y, double scalar) {
         int position = (int) (16 * scalar);
         int[] array = {
@@ -918,6 +983,11 @@ public class Game extends JPanel implements
         return array;
     }
 
+    /*
+        This method figures out whether 2 items can be stacked on top of each other.
+        The parameters are the 2 items (int) and requires a boolean on whether they
+        can be stacked or not.
+    */
     public boolean canStack(int firstItem, int secondItem) {
         if (firstItem < 0 || secondItem < 0) {
             return false;
@@ -932,6 +1002,10 @@ public class Game extends JPanel implements
         return stackable;
     }
 
+    /*
+        This draws an item while it is being dragged in the inventory. It requires
+        the graphics object, and doesn't return anything.
+    */
     public void drawDraggedItem(Graphics g) {
         int scalar = 3;
         if (draggedItemRow != -1) {
@@ -964,6 +1038,11 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This draws items in rows and columns. It requires the graphics object, the
+        values to be drawn, the x and y coordinates it should be drawn at, and the
+        scalar. It doesn't return anything
+    */
     public void drawItems(
         Graphics g, 
         int[][] values, 
@@ -1001,6 +1080,10 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This draws the ui in the game. It requires the graphics object and
+        doesn't return anything.
+    */
     public void drawUi(Graphics g) {
         Image hotbarImage = uiImages[0];
         int[] hotbarDimensions = getImageDim(hotbarImage, 2.5);
@@ -1040,6 +1123,11 @@ public class Game extends JPanel implements
         g.setFont(font);
     }
 
+    /*
+        This draws the inventory. It requires the graphics object, and the shift (int)
+        representing how much it should be shifted by in the y. It doesn't return 
+        anything.
+    */
     public void drawInventory(Graphics g, int shift) {
         Image inventoryImage = uiImages[2];
         int[] imageDimensions = getImageDim(inventoryImage, 3);
@@ -1063,6 +1151,10 @@ public class Game extends JPanel implements
         drawItems(g, inventory, drawX, drawY, scalar);
     }
 
+    /*
+        This draws the sell screen. It requires the graphics object and doesn't
+        return anything
+    */
     public void drawSell(Graphics g) {
         int[] imageDimensions = getImageDim(uiImages[7], 3);
         int x = SCREEN_WIDTH / 2 - imageDimensions[0] / 2;
@@ -1078,9 +1170,13 @@ public class Game extends JPanel implements
         drawItems(g, sellInventory, drawX, drawY, 3);
     }
 
+    /*
+        This draws the store; it requires the graphics object and doesn't return
+        anything
+    */
     public void drawStore(Graphics g) {
         int scalar = 3;
-        g.drawImage(stateImages[0], 0, 0, this);
+        g.drawImage(uiImages[18], 0, 0, this);
         int[] storeInvDim = getImageDim(uiImages[4], scalar);
         g.drawImage(uiImages[4], 30, 90, storeInvDim[0], storeInvDim[1], this);
         int startX = 30 + 7 * scalar;
@@ -1144,6 +1240,10 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This draws the house and the objects inside of it. It needs the graphics object
+        and doesn't return anything.
+    */
     public void drawHouse(Graphics g) {
         // tiles
         for (int row = 0; row < 9; row++) {
@@ -1174,6 +1274,10 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This draws the screen at the end of the day. It requires the graphics object
+        and doesn't return anything.
+    */
     public void drawEnd(Graphics g) {
         g.setColor(new Color(87, 84, 74));
         g.drawImage(uiImages[10], 0, 0, this);
@@ -1210,6 +1314,10 @@ public class Game extends JPanel implements
         g.setFont(font);
     }
 
+    /*
+        This draws the title screen; it also draws the credits and instructions if
+        those are open. It requires the graphics object and doesn't return anything
+    */
     public void drawTitle(Graphics g) {
         g.drawImage(uiImages[11], 0, 0, this);
         int[] buttonDimensions = getImageDim(uiImages[6], 5);
@@ -1219,6 +1327,13 @@ public class Game extends JPanel implements
         );
         Font newFont = font.deriveFont(Font.PLAIN, 40f);
         g.setFont(newFont);
+        int[] titleButtonDimension = getImageDim(uiImages[6], 9);
+        g.drawImage(
+            uiImages[6], SCREEN_WIDTH / 2 - titleButtonDimension[0] / 2, 
+            50, titleButtonDimension[0], titleButtonDimension[1], this
+        );
+        g.drawString("Stardew", 250, 160);
+        g.drawString("Meadow", 350, 200);
         g.drawString("PLAY!!", 329, 430);
         int[] otherButtonDim = getImageDim(uiImages[9], 3);
         g.drawImage(
@@ -1255,12 +1370,20 @@ public class Game extends JPanel implements
         g.setFont(font);
     }
 
+    /*
+        This draws the images in the instruction screen. It requires the graphics
+        object and the image to be drawn, and doesn't return anything
+    */
     public void drawInstructionImage(Graphics g, Image image) {
         int[] imageDimensions = getImageDim(image, 0.25);
         int x = SCREEN_WIDTH / 2 - imageDimensions[0] / 2;
         g.drawImage(image, x, 200, imageDimensions[0], imageDimensions[1], this);
     }
 
+    /*
+        This draws all of the instruction screens; it requires the graphics object
+        and doesn't return anything
+    */
     public void drawInstructions(Graphics g) {
         int x = 130;
         int titleY = 170;
@@ -1330,6 +1453,12 @@ public class Game extends JPanel implements
     }
 
     // ***Clicking methods***
+    /*
+        This finds the box that the user clicked on; it is used for stuff like the 
+        hotbar and store I think. It needs the x and y of the mouse click, the
+        starting x and y of the object, the length, and the scalar. It returns an
+        int of the slot clicked.
+    */
     public int getTileClicked(
         int clickX, 
         int clickY, 
@@ -1355,6 +1484,10 @@ public class Game extends JPanel implements
     }
 
     // ***Movement/keyboard methods***
+    /*
+        This calculates the player movement, taking hitboxes into account. It 
+        has no parameters and doesn't return anything.
+    */
     public void move() {
         int nextCameraX = cameraX;
         if (left) {
@@ -1400,6 +1533,10 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This calculates player movement in the house. It has no parameters and doesn't
+        return anything
+    */
     public void moveStationaryCamera() {
         int nextCameraX = houseX;
         if (left) {
@@ -1408,12 +1545,7 @@ public class Game extends JPanel implements
             nextCameraX += speed;
         }
         int nextTileX = nextCameraX / TILE_LENGTH;
-        if (
-            nextTileX >= 1 &&
-            nextTileX < houseTiles[0].length - 4
-        ) {
-            houseX = nextCameraX;
-        }
+        int tempY = houseY / TILE_LENGTH;
 
         int nextCameraY = houseY;
         if (up) {
@@ -1423,8 +1555,17 @@ public class Game extends JPanel implements
         }
         int nextTileY = nextCameraY / TILE_LENGTH;
         if (
+            nextTileX >= 1 &&
+            nextTileX < houseTiles[0].length - 4
+        ) {
+            if (!(nextTileX == 2 && tempY == 5)) {
+                houseX = nextCameraX;
+            }
+        }
+        if (
             nextTileY >= 2 &&
-            nextTileY < houseTiles.length - 2
+            nextTileY < houseTiles.length - 2 &&
+            !(nextTileY == 5 && nextTileX >= 2 && nextTileX <= 8)
         ) {
             houseY = nextCameraY;
         }
@@ -1444,6 +1585,10 @@ public class Game extends JPanel implements
     }
 
     // ***Animation methods***
+    /*
+        This calculates the frames and counters needed to draw the player animation.
+        It doesn't have any parameters or return stuff
+    */
     public void animatePlayer() {
         if (up || down || left || right) {
             movementAnimationCounter++;
@@ -1474,6 +1619,10 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This resets variables to start a new action animation. It requires the
+        new action being performed as a string, and doesn't return anything
+    */
     public void startActionAnimation(String action) {
         isPlayingActionAnimation = true;
         currentAction = action;
@@ -1481,21 +1630,28 @@ public class Game extends JPanel implements
         actionAnimationCounter = 0;
     }
 
+    /*
+        This resets and changes variables to start animating the amount of money
+        earned at the end of the end. It doens't have any parameters and doesn't
+        return anything.
+    */
     public void startMoneyAnimation() {
         if (earned == 0) {
             return;
         }
         money += earned;
-        System.out.println("earned: " + earned + ", baseSpeed: " + baseSpeed);
         int estimatedFrames = earned / baseSpeed;
         duration = Math.max(Math.min(estimatedFrames, 60), 30);
-        System.out.println("duration set to: " + duration);
         displayedMoney = 0;
 
         moneyAnimationFrames = 0;
         isAnimatingMoney = true;
     }
 
+    /*
+        This updates the amount of money for the animation. It doesn't have any
+        parameters and doesn't return anything
+    */
     public void updateMoneyAnimation() {
         if (!isAnimatingMoney) {
             return;
@@ -1515,6 +1671,10 @@ public class Game extends JPanel implements
     }
 
     // ***State related methods***
+    /*
+        This checks the player location, and whether the state should be changed or not.
+        It doesn't have any parameters and doesn't return anything.
+    */
     public void checkState() {
         if (state.equals("game")) {
             if (playerTileY != 18 || playerTileX < 20 || playerTileX > 22) {
@@ -1548,6 +1708,10 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This calculates the time in game. It doesn't have any parameters and doesn't
+        return anything.
+    */
     public void calculateTime() {
         if (state.equals("game") || state.equals("house") || state.equals("inv")) {
             framesPassed += 1;
@@ -1555,7 +1719,6 @@ public class Game extends JPanel implements
                 framesPassed = 0;
                 secondsPassed += 1;
                 if (secondsPassed >= 17 * 20) {
-                    // calculate smth as the day is over
                     state = "end";
                     playNewAudio(2);
                     startMoneyAnimation();
@@ -1567,12 +1730,14 @@ public class Game extends JPanel implements
                 minutes = totalMinutes % 60;
             }
         } else if (state.equals("end")) {
-            // reset these variables when the user clicks next day or back
-            // to title screen
-            // call function here
+            
         }
     }
 
+    /*
+        This is called to reset the day, and prepare for the next one. It doesn't have
+        any parameters and doesn't return anything.
+    */
     public void resetDay() {
         int[][] defaultStore = getDefaultStore();
         for (int i = 0; i < 2; i++) {
@@ -1606,7 +1771,6 @@ public class Game extends JPanel implements
         days += 1;
         try {
             saveFilesNextDay();
-            System.out.println("save files!!!");
         } catch (IOException e) {
 
         }
@@ -1639,6 +1803,11 @@ public class Game extends JPanel implements
     }
 
     // ***Methods for calculating***
+    /*
+        This calculates the next slot an item should be placed in. It requires
+        the items/values, the item, and the row order it should be checked in. It returns
+        an int[] of the location it should be placed in.
+    */
     public int[] calculateNextSlot(int[][] values, int item, int[] rowOrder) {
         for (int row = 0; row < values.length; row++) {
             int realRow = rowOrder[row];
@@ -1659,7 +1828,6 @@ public class Game extends JPanel implements
                         values[realRow][col] = itemType * 100 + totalQuantity;
 
                         int[] coordinates = {realRow, col};
-                        printArray(coordinates);
                         return coordinates;
                     }
                 } else if (
@@ -1697,7 +1865,6 @@ public class Game extends JPanel implements
                 if (values[realRow][col] == -1) {
                     values[realRow][col] = item;
                     int[] coordinates = {realRow, col};
-                    printArray(coordinates);
                     return coordinates;
                 }
             }
@@ -1705,25 +1872,30 @@ public class Game extends JPanel implements
         return new int[]{-1, -1};
     }
 
+    /*
+        This calculates the amount of money earned after it was sold in the
+        selling place. It doesn't have any parameters and doesn't return anything
+    */
     public void calculateEarnedMoney() {
-        System.out.println("earned before: " + earned);
         int[] sellPrices = getItemSellPrices();
         for (int i = 0; i < 18; i++) {
             int row = i / 9;
             int col = i % 9;
             int item = sellInventory[row][col];
-            System.out.println(item + " " + row + " " + col);
             if (item == -1) {
                 break;
             }
             int[] itemInfo = getItemInfo(item);
             earned += sellPrices[itemInfo[0]] * itemInfo[1];
         }
-        System.out.println("earned after: " + earned);
         resetArray(sellInventory);
     }
 
     // ***Saving files methods***
+    /*
+        This saves data into a file. The parameters are the file to write to,
+        and the values to save
+    */
     public void saveFile(File file, int[][] values) throws IOException {
         PrintWriter out = new PrintWriter(file);
         for (int i = 0; i < values.length; i++) {
@@ -1735,6 +1907,10 @@ public class Game extends JPanel implements
         out.close();
     }
 
+    /*
+        This saves the files for the next day. There are no parameters and doesn't
+        return anything.
+    */
     public void saveFilesNextDay() throws IOException {
         File generalFile = new File("data/general.txt");
         File inventoryFile = new File("data/inv.txt");
@@ -1749,11 +1925,12 @@ public class Game extends JPanel implements
         saveFile(objectFile, objectsMap);
         saveFile(storeFile, storeItems);
         saveFile(cropFile, cropDaysMap);
-
-        System.out.println("done saving files!!!");
     }
 
     // ***Initializing methods***
+    /*
+        This returns the default map as an int[][] and there are no parameters.
+    */
     public int[][] getDefaultMap() {
         int[][] map = {
             {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48},
@@ -1813,6 +1990,9 @@ public class Game extends JPanel implements
         return map;
     }
 
+    /*
+        This returns the default object map as an int[][] and no parameters
+    */
     public int[][] getDefaultObjectMap() {
         int[][] map = {
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -1830,8 +2010,8 @@ public class Game extends JPanel implements
             {-1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 32, -1, -1, 17, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 19, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 19, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 32, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 6, -1, -1, -1, -1, -1, -1, -1, -1, 5, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -1839,27 +2019,27 @@ public class Game extends JPanel implements
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 18, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, 20, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 7, -1, -1, 32, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 33, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-            {-1, -1, -1, -1, -1, -1, -1, -1, -1, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 5, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+            {-1, -1, -1, -1, -1, -1, -1, -1, -1, 4, -1, -1, -1, -1, -1, -1, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -1872,6 +2052,10 @@ public class Game extends JPanel implements
         return map;
     }
 
+    /*
+        This gets all of the hitboxes for the items. It doesn't have any parameters
+        and returns a boolean[][] for whether the tile has a hitbox or not
+    */
     public boolean[][] getHitboxes() {
         int[][] objectMap = getDefaultObjectMap();
         boolean[][] array = new boolean[objectMap.length][objectMap[0].length];
@@ -1894,8 +2078,11 @@ public class Game extends JPanel implements
                     );
                     int width = imageDimensions[0] / 64;
                     int height = imageDimensions[1] / 64;
-                    System.out.println(object + " " + width + " " + height);
-                    updateHitboxes(col, row, width, height - 1);
+                    if (object == 18 || object == 20) {
+                        updateHitboxes(col, row, width, height);;
+                    } else {
+                        updateHitboxes(col, row, width, height - 1);
+                    }
                 }
             }
         }
@@ -1904,6 +2091,9 @@ public class Game extends JPanel implements
         return array;
     }
 
+    /*
+        This returns the default store as an int[][] and doesn't have any parameters
+    */
     public int[][] getDefaultStore() {
         int[][] store = {
             {1610, 1710, 1810, 1910, 2010, 2110},
@@ -1916,6 +2106,10 @@ public class Game extends JPanel implements
         return store;
     }
 
+    /*
+        This loads the map/the data from a file as the parameter, and returns the
+        int[][] of the data.
+    */
     public int[][] loadMap(File mapFile) throws FileNotFoundException {
         Scanner inFile = new Scanner(mapFile);
         int[][] changedMap;
@@ -1944,6 +2138,11 @@ public class Game extends JPanel implements
         return changedMap;
     }
 
+    /*
+        This loads the images into the arrays. It requires the folder of images, and
+        a boolean on whether to mod the indxes or not. It requires a BufferedImage[]
+        of the images.
+    */
     public BufferedImage[] loadImages(
         File folder, 
         boolean mod
@@ -1965,6 +2164,10 @@ public class Game extends JPanel implements
         return images;
     }
 
+    /*
+        This draws the map in the game; it requires the graphics object and
+        doesn't return anything
+    */
     public void drawMap(Graphics g) {
         if (offScreenBuffer == null) {
             offScreenImage = createImage(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -2064,6 +2267,10 @@ public class Game extends JPanel implements
         g.drawImage(offScreenImage, 0, 0, this);
     }    
 
+    /*
+        This initializes the game and the arrays. It doesn't have any parameters
+        and returns a boolean on whether it was successful or not.
+    */
     public boolean initialize() {
         File folder = new File("data/");
         File generalFile = new File("data/general.txt");
@@ -2082,9 +2289,9 @@ public class Game extends JPanel implements
         try {
             if (generalFile.length() == 0) {
                 PrintWriter out = new PrintWriter(new FileWriter("data/general.txt"));
-                out.print("100 1");
+                out.print("100 0");
                 money = 100;
-                days = 1;
+                days = 0;
                 out.close();
             } else {
                 int[] generalArray = loadMap(generalFile)[0];
@@ -2160,19 +2367,6 @@ public class Game extends JPanel implements
                 {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
             };
             houseObjects = objectHouseMap;
-            // houseHitboxes = new boolean[][]{
-            //     {true, true, true, true, true, true, true, true, true, true, true, true},
-            //     {true, true, true, true, true, true, true, true, true, true, true, true},
-            //     {true, true, true, true, true, true, true, true, true, true, true, true},
-            //     {true, false, false, false, true, true, true, true, true, true, true, true},
-            //     {true, false, false, false, true, true, true, true, true, true, true, true},
-            //     {true, false, false, true, true, true, true, true, true, true, true, true},
-            //     {true, true, false, true, true, true, true, true, true, true, true, true},
-            //     {true, true, false, true, true, true, true, true, true, true, true, true},
-            //     {true, true, false, true, true, true, true, true, true, true, true, true},
-            // };
-            // can add trophy here if the user has one??
-            // check if this is correct later
             String[] cropFolders = (new File("assets/object-crops")).list();
             for (int i = 0; i < 12; i++) {
                 String directory = null;
@@ -2214,7 +2408,6 @@ public class Game extends JPanel implements
 
             playerImages = loadImages(new File("assets/player"), false);
             uiImages = loadImages(new File("assets/ui"), false);
-            stateImages = loadImages(new File("assets/state"), false);
 
             loadAudio();
             playNewAudio(0);
@@ -2225,6 +2418,10 @@ public class Game extends JPanel implements
         return true;
     }
 
+    /*
+        This method paints everything. It requires the graphics object and doesn't
+        return anything.
+    */
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -2252,21 +2449,13 @@ public class Game extends JPanel implements
                 drawSell(g);
                 drawInventory(g, 100);
             }
-            cameraLocation.setText("camera: " + cameraX + " " + cameraY);
-            playerLocation.setText("player: " + playerTileX + " " + playerTileY);
         } else if (state.equals("store")) {
             drawStore(g);
-            cameraLocation.setText("");
-            playerLocation.setText("");
         } else if (state.equals("house")) {
             drawHouse(g);
             drawPlayer(g, 4, false);
-            cameraLocation.setText("camera: " + cameraX + " " + cameraY);
-            playerLocation.setText("player: " + playerTileX + " " + playerTileY);
         } else if (state.equals("end")) {
             drawEnd(g);
-            cameraLocation.setText("");
-            playerLocation.setText("");
         } else if (state.equals("title")) {
             drawTitle(g);
             if (isCreditsOpen) {
@@ -2278,6 +2467,10 @@ public class Game extends JPanel implements
     }
 
     // ***Mouse Events***
+    /*
+        This calculates stuff for whenever the mouse is pressed. It requires the mouse
+        event, and doesn't return anything.
+    */
     @Override
     public void mousePressed(MouseEvent e) {
         int actualX = e.getX();
@@ -2287,7 +2480,6 @@ public class Game extends JPanel implements
         int tileX = x / TILE_LENGTH;
         int tileY = y / TILE_LENGTH;
         if (state.equals("game")) {
-            // hotbar is drawn at 157 & 521 at top left corner
             if (
                 actualX > 159 && actualX < 159 + 455 && 
                 actualY > 523 && actualY < SCREEN_HEIGHT
@@ -2298,38 +2490,21 @@ public class Game extends JPanel implements
                 if (checkHotbarSlot >= 0) {
                     hotbarSlot = checkHotbarSlot;
                 }
-                System.out.println(
-                    "hotbar clicked at " + actualX + " " + 
-                    actualY + " slot: " + hotbarSlot
-                );
                 return;
             }
             int item = hotbar[hotbarSlot] / 100;
-
-            System.out.println("hotbar slot: " + hotbarSlot);
-            System.out.println("metadata value: " + hotbar[hotbarSlot]);
-
-            System.out.println("pressed at " + x + ", " + y);
-            System.out.println("pressed tile: " + tileX + ", " + tileY);
-            System.out.println(
-                "crop day: " + cropDaysMap[tileY][tileX]
-            );
             if (tileY > 0 && objectsMap[tileY - 1][tileX] % 100 == 3) {
-                System.out.println("crop can be picked up");
                 playSoundEffect(6);
                 updateCropHarvest(tileX, tileY);
             } else if (item == 32 || item == 34 || item == 35 || item == 36) {
-                System.out.println("hoe tool");
                 startActionAnimation("hoeing");
                 playSoundEffect(3);
                 updateTile(tileX, tileY, item);
             } else if (item == 33 || item == 37 || item == 38 || item == 39) {
-                System.out.println("water bucket");
                 startActionAnimation("watering");
                 playSoundEffect(4);
                 updateTile(tileX, tileY, item);
             } else if (item >= 16 && item <= 27) {
-                System.out.println("crop");
                 playSoundEffect(5);
                 updateCropPlaced(tileX, tileY);
             }
@@ -2369,7 +2544,6 @@ public class Game extends JPanel implements
                         actualY >= slotY && actualY < slotY + 16 * scalar &&
                         inventory[row][col] >= 0 && inventory[row][col] < 3200
                     ) {
-                        System.out.println(col + " " + row);
                         int item = inventory[row][col];
                         int[] sellRowOrder = {0, 1};
                         int[] coords = calculateNextSlot(
@@ -2392,7 +2566,6 @@ public class Game extends JPanel implements
                     actualY < 120 + 16 * scalar + row * 20 * scalar &&
                     sellInventory[row][col] >= 0 && sellInventory[row][col] < 3200
                 ) {
-                    System.out.println(col + " " + row);
                     int item = sellInventory[row][col];
 
                     int[] invRowOrder = { 2, 0, 1 };
@@ -2405,7 +2578,6 @@ public class Game extends JPanel implements
                     }
                 }
             }
-            // also checks if they click smth in the sell place to get it back
         } else if (state.equals("store")) {
             int scalar = 3;
             for (int i = 0; i < 5; i++) {
@@ -2421,14 +2593,13 @@ public class Game extends JPanel implements
                 }
             }
             int[] buttonImageDim = getImageDim(uiImages[6], 2);
-            // 463, 395
             if (
                 actualX >= 463 && actualX <= 463 + buttonImageDim[0] &&
                 actualY >= 395 && actualY <= 395 + buttonImageDim[1] &&
                 storeSelected != -1
             ) {
                 int[] info = getStoreItem(storeSelected);
-                System.out.println(updateBoughtItem(info[1], info[0]));
+                updateBoughtItem(info[1], info[0]);
             }
         } else if (state.equals("end")) {
             int[] buttonDimensions = getImageDim(uiImages[6], 3);
@@ -2455,25 +2626,27 @@ public class Game extends JPanel implements
                 actualX >= 264 && actualX <= 264 + buttonDimensions[0] && 
                 actualY >= 350 && actualY <= 350 + buttonDimensions[1]
             ) {
-                System.out.println("play button");
                 state = "house";
                 playNewAudio(1);
             } else if (
                 actualX >= 100 && actualX <= 100 + otherButtonDim[0] &&
                 actualY >= 376 && actualY <= 376 + otherButtonDim[1]
             ) {
-                System.out.println("credits");
                 isCreditsOpen = true;
             } else if (
                 actualX >= 524 && actualX <= 524 + otherButtonDim[0] &&
                 actualY >= 376 && actualY <= 376 + otherButtonDim[1]
             ) {
-                System.out.println("instructions");
                 isInstructionsOpen = true;
             }
         }
     }
 
+    /*
+        This calculates stuff when the mouse is released. It is currently only being
+        used for the inventory, after it was dragged. It requires the mouse event as
+        a parameter and doesn't return anything.
+    */
     @Override
     public void mouseReleased(MouseEvent e) {
         if (state.equals("inv") && draggedItemRow != -1) {
@@ -2501,8 +2674,6 @@ public class Game extends JPanel implements
                     break;
                 }
             }
-            System.out.println("Dragged from: " + draggedItemRow + ", " + draggedItemCol);
-            System.out.println("Target: " + targetRow + ", " + targetCol);
 
             if (targetRow == draggedItemRow && targetCol == draggedItemCol) {
                 inventory[draggedItemRow][draggedItemCol] = draggedItem;
@@ -2551,6 +2722,10 @@ public class Game extends JPanel implements
 
     }
 
+    /*
+        This is called when the mouse is dragged in the inventory, and updates
+        where the mouse is. It requires the mouse event and doesn't return anything
+    */
     @Override
     public void mouseDragged(MouseEvent e) {
         if (state.equals("inv") && draggedItemRow != -1) {
@@ -2565,10 +2740,13 @@ public class Game extends JPanel implements
     }
 
     // ***Key Events***
+    /*
+        This calculates what should be done when a key is pressed; it requires the
+        key event and doesn't return anything.
+    */
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
-        // continue to add other states where this shouldnt apply to and stuff
         if (state.equals("game") || state.equals("house")) {
             if (key == KeyEvent.VK_A) {
                 left = true;
@@ -2586,8 +2764,6 @@ public class Game extends JPanel implements
                 if (key >= KeyEvent.VK_1 && key <= KeyEvent.VK_9) {
                     hotbarSlot = Integer.parseInt(KeyEvent.getKeyText(key)) - 1;
                 } else if (key == KeyEvent.VK_L) {
-                    // test key for now
-                    System.out.println("clicked l");
                     updateCropGrowth();
                 }
             }
@@ -2635,6 +2811,10 @@ public class Game extends JPanel implements
         }
     }
 
+    /*
+        This is called whenever a key is released. It requires the key event and
+        doesn't return anything.
+    */
     @Override 
     public void keyReleased(KeyEvent e) {
         int key = e.getKeyCode();
@@ -2660,6 +2840,11 @@ public class Game extends JPanel implements
 
     }
 
+    /*
+        This is called at the start of the program, and runs a loop on everything
+        that should be called on for every frame. It doesn't have any parameters 
+        and doesn't return anything
+    */
     @Override
 	public void run() {
         initialized = initialize();
@@ -2685,8 +2870,9 @@ public class Game extends JPanel implements
 		}
 	}
 
+    // main
     public static void main(String[] args) throws IOException, FontFormatException {
-        System.out.println("hello world!");
+        // System.out.println("hello world!");
         JFrame frame = new JFrame("Game");
         Game panel = new Game();
         wait = true;
@@ -2695,7 +2881,7 @@ public class Game extends JPanel implements
             System.out.print("");
         }
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        // frame.setResizable(false);
+        frame.setResizable(false);
         frame.add(panel);
         frame.pack();
         frame.setVisible(true);
